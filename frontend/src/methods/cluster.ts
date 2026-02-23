@@ -37,6 +37,7 @@ import {
   MachineSetNodeType,
   MachineSetType,
   NodeForceDestroyRequestType,
+  SiderolinkResourceType,
   TalosUpgradeStatusType,
 } from '@/api/resources'
 import type { Metadata } from '@/api/v1alpha1/resource.pb'
@@ -99,6 +100,22 @@ export const destroyResources = async (resources: DeleteRequest[], phase?: Ref<s
       }
 
       await ResourceService.Delete(request, withRuntime(Runtime.Omni), withTimeout(timeout))
+    } catch (e) {
+      if (e.code !== Code.NOT_FOUND) {
+        throw e
+      }
+    }
+  }
+}
+
+export const teardownResources = async (resources: DeleteRequest[], phase?: Ref<string>) => {
+  for (const request of resources) {
+    try {
+      if (phase) {
+        phase.value = `Tearing down resource ${request.type}(${request.namespace}/${request.id}`
+      }
+
+      await ResourceService.Teardown(request, withRuntime(Runtime.Omni), withTimeout(timeout))
     } catch (e) {
       if (e.code !== Code.NOT_FOUND) {
         throw e
@@ -235,7 +252,12 @@ export const getMachineConfigPatchesToDelete = async (machineID: string) => {
   return resources
 }
 
-export const destroyNodes = async (clusterName: string, ids: string[], force: boolean) => {
+export const destroyNodes = async (
+  clusterName: string,
+  ids: string[],
+  forceEtcdLeave: boolean,
+  force?: boolean,
+) => {
   const machineSetNodes: Record<string, MachineSetNode> = {}
   let controlPlanes = 0
 
@@ -268,6 +290,7 @@ export const destroyNodes = async (clusterName: string, ids: string[], force: bo
   }
 
   const resources: DeleteRequest[] = []
+  const links: DeleteRequest[] = []
 
   for (const id of ids) {
     if (
@@ -281,7 +304,7 @@ export const destroyNodes = async (clusterName: string, ids: string[], force: bo
       )
     }
 
-    if (force) {
+    if (forceEtcdLeave) {
       // if this is a force-delete, MachineSetNode might already be gone, and it is ok
       try {
         await ResourceService.Get<Resource<NodeForceDestroyRequestSpec>>(
@@ -324,8 +347,17 @@ export const destroyNodes = async (clusterName: string, ids: string[], force: bo
         type: md.type!,
       })
     }
+
+    if (force) {
+      links.push({
+        id: id,
+        namespace: DefaultNamespace,
+        type: SiderolinkResourceType,
+      })
+    }
   }
 
+  await teardownResources(links)
   await destroyResources(resources)
 }
 

@@ -25,7 +25,9 @@ import {
   MachineSetNodeType,
 } from '@/api/resources'
 import TButton from '@/components/common/Button/TButton.vue'
+import TCheckbox from '@/components/common/Checkbox/TCheckbox.vue'
 import TSpinner from '@/components/common/Spinner/TSpinner.vue'
+import Tooltip from '@/components/common/Tooltip/Tooltip.vue'
 import { ClusterCommandError, destroyNodes } from '@/methods/cluster'
 import { controlPlaneMachineSetId } from '@/methods/machineset'
 import { setupNodenameWatch } from '@/methods/node'
@@ -56,24 +58,28 @@ const close = (goBack?: boolean) => {
   router.go(-1)
 }
 
+const canForceEtcdLeave = ref(false)
 const forceEtcdLeave = ref(false)
+const force = ref(false)
 
 const initRequiresForceEtcdLeave = async () => {
   try {
-    await ResourceService.Get(
+    const m = await ResourceService.Get(
       {
-        type: MachineSetNodeType,
+        type: ClusterMachineStatusType,
         namespace: DefaultNamespace,
         id: route.query.machine as string,
       },
       withRuntime(Runtime.Omni),
     )
+
+    if (m.metadata.labels?.[LabelControlPlaneRole] !== undefined) {
+      canForceEtcdLeave.value = true
+    }
   } catch (e) {
     if (e.code !== Code.NOT_FOUND) {
       throw e
     }
-
-    forceEtcdLeave.value = true
   }
 }
 
@@ -161,6 +167,7 @@ const destroyNode = async () => {
       route.query.cluster as string,
       [route.query.machine as string],
       forceEtcdLeave.value,
+      force.value,
     )
   } catch (e) {
     if (e instanceof ClusterCommandError) {
@@ -182,17 +189,16 @@ const destroyNode = async () => {
 
   close()
 
+  let message = 'The machine set is scaling down.'
   if (forceEtcdLeave.value) {
-    showSuccess(
-      `The Machine ${node.value} is Marked for Destruction with --force-etcd-leave Option`,
-      'It might take a while until the machine is completely removed',
-    )
-  } else {
-    showSuccess(
-      `The Machine ${node.value} was Removed From the Machine Set`,
-      'The machine set is scaling down',
-    )
+    message += ' Force leave etcd was requested.'
   }
+
+  if (force.value) {
+    message += ' Force destroy was requested.'
+  }
+
+  showSuccess(`The Machine ${node.value} was Removed From the Machine Set`, message)
 }
 </script>
 
@@ -200,31 +206,49 @@ const destroyNode = async () => {
   <div class="modal-window">
     <div class="heading">
       <h3 class="text-base text-naturals-n14">
-        <template v-if="!forceEtcdLeave">
-          Destroy the Node {{ node ?? $route.query.machine }} ?
-        </template>
-        <template v-else>
-          Node {{ node ?? $route.query.machine }} is already being destroyed, attempt to force
-          leaving etcd?
-        </template>
+        Destroy the Node {{ node ?? $route.query.machine }} ?
       </h3>
       <CloseButton @click="close(true)" />
     </div>
     <ManagedByTemplatesWarning warning-style="popup" />
-    <p class="text-xs text-primary-p3">
-      Force leaving etcd member on machine {{ node ?? $route.query.machine }} may break the etcd
-      quorum. Do not use this option unless you are sure that the machine is not an etcd member or
-      the machine is already down and will not come back up.
-    </p>
-    <p class="mb-2 text-xs">Please confirm the action.</p>
+
+    <div class="flex flex-col gap-2">
+      <Tooltip>
+        <template #description>
+          <p class="w-96">
+            Force leaving etcd member may break the etcd quorum. Do not use this option unless you
+            are sure that the machine is not an etcd member or the machine is already down and will
+            not come back up.
+          </p>
+        </template>
+        <TCheckbox
+          v-model="forceEtcdLeave"
+          :disabled="!canForceEtcdLeave"
+          label="force etcd leave"
+        />
+      </Tooltip>
+      <Tooltip>
+        <template #description>
+          <p class="w-96">
+            Force destroying the machine will skip wiping the machine and will remove it from the
+            Omni account completely. It will be necessary to manually wipe the machine to add it to
+            the Omni account again. Use this option only in case if the machine is already down and
+            will not come back up.
+          </p>
+        </template>
+        <TCheckbox v-model="force" label="force destroy" />
+      </Tooltip>
+    </div>
+
     <div v-if="warning" class="mt-3 text-xs text-yellow-y1">{{ warning }}</div>
+
+    <p class="my-2 text-xs">Please confirm the action.</p>
 
     <div class="mt-2 flex items-end gap-4">
       <div class="flex-1" />
       <TButton class="h-9 w-32" :disabled="scalingDown" @click="destroyNode">
         <TSpinner v-if="scalingDown" class="h-5 w-5" />
-        <span v-else-if="forceEtcdLeave">Force Etcd Leave</span>
-        <span v-else>Destroy</span>
+        Confirm
       </TButton>
     </div>
   </div>

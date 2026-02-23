@@ -14,11 +14,13 @@ import (
 	"github.com/cosi-project/runtime/pkg/resource"
 	"github.com/cosi-project/runtime/pkg/safe"
 	"github.com/cosi-project/runtime/pkg/state"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/omni/client/pkg/client"
 	omniresources "github.com/siderolabs/omni/client/pkg/omni/resources"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
+	"github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
 	"github.com/siderolabs/omni/client/pkg/omnictl/internal/access"
 	"github.com/siderolabs/omni/client/pkg/omnictl/resources"
 )
@@ -46,6 +48,7 @@ var unlockCmd = &cobra.Command{
 var machineDeleteCmdFlags struct {
 	timeout        time.Duration
 	forceEtcdLeave bool
+	force          bool
 	noAsk          bool
 }
 
@@ -90,6 +93,7 @@ func setLocked(machineID resource.ID, lock bool) func(context.Context, *client.C
 	}
 }
 
+//nolint:gocognit,gocyclo,cyclop
 func deleteMachine(ctx context.Context, st state.State, id resource.ID) error {
 	ctx, cancel := context.WithTimeout(ctx, machineDeleteCmdFlags.timeout)
 	defer cancel()
@@ -101,13 +105,17 @@ func deleteMachine(ctx context.Context, st state.State, id resource.ID) error {
 		return err
 	}
 
+	yellow := color.New(color.FgYellow)
+
 	if machineDeleteCmdFlags.forceEtcdLeave {
 		if !machineDeleteCmdFlags.noAsk {
 			var response string
 
-			fmt.Fprintf(os.Stderr, `Force leaving etcd member on machine %s may break the etcd quorum.
+			//nolint:errcheck
+			yellow.Fprintf(os.Stderr, `WARNING: force leaving etcd member on machine %s may break the etcd quorum.
 Do not use this option unless you are sure that the machine is not an etcd member or the machine is already down and will not come back up.
-Do you want to continue? (y/N): `, id)
+`, id)
+			fmt.Fprint(os.Stderr, `Do you want to continue? (y/N): `)
 
 			_, err = fmt.Scanln(&response)
 			if err != nil {
@@ -121,7 +129,7 @@ Do you want to continue? (y/N): `, id)
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "create %s for machine %s\n", omni.NodeForceDestroyRequestType, id)
+		fmt.Fprintf(os.Stderr, "create %s for machine %s\n\n", omni.NodeForceDestroyRequestType, id)
 
 		forceDestroyRequest := omni.NewNodeForceDestroyRequest(id)
 
@@ -137,6 +145,37 @@ Do you want to continue? (y/N): `, id)
 		}
 	}
 
+	if machineDeleteCmdFlags.force {
+		if !machineDeleteCmdFlags.noAsk {
+			var response string
+
+			//nolint:errcheck
+			yellow.Fprintf(os.Stderr, `WARNING: force deleting machine %s will skip wiping the machine and will remove it from the Omni account completely.
+It will be necessary to manually wipe the machine to add it to the Omni account again.
+Use this option only in case if the machine is already down and will not come back up.
+`, id)
+
+			fmt.Fprint(os.Stderr, `Do you want to continue? (y/N): `)
+
+			_, err = fmt.Scanln(&response)
+			if err != nil {
+				return fmt.Errorf("failed to read user input: %w", err)
+			}
+
+			if !strings.EqualFold(response, "y") {
+				fmt.Fprintln(os.Stderr, "aborting machine deletion")
+
+				return nil
+			}
+		}
+
+		if _, err = st.Teardown(ctx, siderolink.NewLink(clusterMachine.Metadata().ID(), nil).Metadata()); err != nil && !state.IsNotFoundError(err) {
+			return fmt.Errorf("failed to teardown %s for machine %s: %w", siderolink.LinkType, id, err)
+		}
+
+		fmt.Fprintf(os.Stderr, "teardown %s %s\n\n", siderolink.LinkType, id)
+	}
+
 	machineSetNode, err := safe.StateGetByID[*omni.MachineSetNode](ctx, st, id)
 	if err != nil && !state.IsNotFoundError(err) {
 		return fmt.Errorf("failed to get %s %s: %w", omni.MachineSetNodeType, id, err)
@@ -145,7 +184,7 @@ Do you want to continue? (y/N): `, id)
 	if machineSetNode != nil {
 		fmt.Fprintf(os.Stderr, "destroy %s %s\n", omni.MachineSetNodeType, id)
 
-		if err = resources.Destroy(ctx, st, "", omni.MachineSetNodeType, "", false, []resource.ID{id}); err != nil {
+		if err = resources.Destroy(ctx, st, "", omni.MachineSetNodeType, "", false, []resource.ID{id}); err != nil && !state.IsNotFoundError(err) {
 			return err
 		}
 	}
@@ -186,6 +225,7 @@ var machineCmd = &cobra.Command{
 
 func init() {
 	machineDeleteCmd.PersistentFlags().BoolVar(&machineDeleteCmdFlags.forceEtcdLeave, "force-etcd-leave", false, "force leave etcd")
+	machineDeleteCmd.PersistentFlags().BoolVarP(&machineDeleteCmdFlags.force, "force", "f", false, "force delete the machine, skipping wipe")
 	machineDeleteCmd.PersistentFlags().BoolVarP(&machineDeleteCmdFlags.noAsk, "yes-i-am-really-sure", "y", false, "do not ask for confirmation when using --force-etcd-leave")
 	machineDeleteCmd.PersistentFlags().DurationVarP(&machineDeleteCmdFlags.timeout, "timeout", "t", 5*time.Minute, "timeout for the machine deletion")
 
