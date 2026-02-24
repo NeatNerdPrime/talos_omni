@@ -33,6 +33,9 @@ type Auth struct {
 	// old/expired keys).
 	KeyPruner KeyPrunerConfig `json:"keyPruner" yaml:"keyPruner"`
 
+	// Limits contains configuration for user and service account limits.
+	Limits AuthLimits `json:"limits" yaml:"limits"`
+
 	// Oidc contains OIDC authentication provider configuration.
 	Oidc OIDC `json:"oidc" yaml:"oidc"`
 
@@ -68,6 +71,15 @@ type Auth0 struct {
 	// authentication requests. When true, data to the token endpoint is transmitted
 	// as x-www-form-urlencoded data instead of JSON.
 	UseFormData *bool `json:"useFormData,omitempty" yaml:"useFormData,omitempty"`
+}
+
+type AuthLimits struct {
+	// MaxServiceAccounts is the maximum number of service accounts allowed. 0 means
+	// unlimited.
+	MaxServiceAccounts *uint32 `json:"maxServiceAccounts,omitempty" yaml:"maxServiceAccounts,omitempty"`
+
+	// MaxUsers is the maximum number of users allowed. 0 means unlimited.
+	MaxUsers *uint32 `json:"maxUsers,omitempty" yaml:"maxUsers,omitempty"`
 }
 
 type BoltDB struct {

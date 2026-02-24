@@ -119,3 +119,7 @@ func RotateSecretsValidationOptions(st state.State) []validated.StateOption {
 func InstallationMediaConfigValidationOptions() []validated.StateOption {
 	return installationMediaConfigValidationOptions()
 }
+
+func AccountLimitsValidationOptions(st state.State, limits config.AuthLimits) []validated.StateOption {
+	return accountLimitsValidationOptions(st, limits)
+}

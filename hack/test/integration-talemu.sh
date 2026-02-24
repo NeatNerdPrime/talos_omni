@@ -41,6 +41,9 @@ prepare_vault
 # Start MinIO server.
 prepare_minio access_key="access" secret_key="secret123"
 
+export MAX_USERS=5
+export MAX_SERVICE_ACCOUNTS=5
+
 prepare_omni_config
 
 docker run --name "${PROMETHEUS_CONTAINER_NAME}" \

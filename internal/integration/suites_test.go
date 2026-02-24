@@ -144,6 +144,23 @@ Verify various omnictl commands.`)
 	}
 }
 
+func testAccountLimits(options *TestOptions) TestFunc {
+	return func(t *testing.T) {
+		t.Log(`
+Test that service account and user creation is blocked when the configured limits are reached.`)
+
+		t.Run(
+			"ServiceAccountLimitsShouldBeEnforced",
+			AssertServiceAccountLimits(t.Context(), options.omniClient),
+		)
+
+		t.Run(
+			"UserLimitsShouldBeEnforced",
+			AssertUserLimits(t.Context(), options.omniClient),
+		)
+	}
+}
+
 func testKubernetesNodeAudit(options *TestOptions) TestFunc {
 	return func(t *testing.T) {
 		t.Parallel()

@@ -130,6 +130,12 @@ config:
       #labelRules: {}
       # AttributeRules defines additional identity, fullname, firstname and lastname mappings.
       #attributeRules: {}
+    # Limits contains configuration for user and service account limits.
+    #limits:
+      # MaxUsers is the maximum number of users allowed. 0 means unlimited.
+      #maxUsers: 0
+      # MaxServiceAccounts is the maximum number of service accounts allowed. 0 means unlimited.
+      #maxServiceAccounts: 0
   # Debug contains debug-related configuration.
   debug:
     # -- Server contains debug server configuration.

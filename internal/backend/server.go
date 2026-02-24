@@ -349,7 +349,7 @@ func (s *Server) makeMux(oidcProvider *oidc.Provider) (*http.ServeMux, error) {
 			return nil, nil //nolint:nilnil
 		}
 
-		return saml.NewHandler(s.state.Default(), s.authConfig.TypedSpec().Value.Saml, s.logger, s.cfg.Services.Api.URL())
+		return saml.NewHandler(s.omniRuntime.ValidatedState(), s.authConfig.TypedSpec().Value.Saml, s.logger, s.cfg.Services.Api.URL())
 	}()
 	if err != nil {
 		return nil, err

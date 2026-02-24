@@ -32,7 +32,6 @@ import (
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni/etcdbackup/store"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/validated"
 	"github.com/siderolabs/omni/internal/pkg/auth/accesspolicy"
-	"github.com/siderolabs/omni/internal/pkg/auth/actor"
 	"github.com/siderolabs/omni/internal/pkg/auth/role"
 	"github.com/siderolabs/omni/internal/pkg/config"
 	omnijsonschema "github.com/siderolabs/omni/internal/pkg/jsonschema"
@@ -954,18 +953,65 @@ func hasUppercaseLetters(s string) bool {
 	return false
 }
 
-func identityValidationOptions(samlConfig config.SAML) []validated.StateOption {
+func accountLimitsValidationOptions(st state.State, limits config.AuthLimits) []validated.StateOption {
 	return []validated.StateOption{
 		validated.WithCreateValidations(validated.NewCreateValidationForType(func(ctx context.Context, res *authres.Identity, _ ...state.CreateOption) error {
+			_, isServiceAccount := res.Metadata().Labels().Get(authres.LabelIdentityTypeServiceAccount)
+
+			if isServiceAccount {
+				maxServiceAccounts := limits.GetMaxServiceAccounts()
+				if maxServiceAccounts == 0 {
+					return nil
+				}
+
+				existing, err := safe.StateListAll[*authres.Identity](ctx, st,
+					state.WithLabelQuery(resource.LabelExists(authres.LabelIdentityTypeServiceAccount)),
+				)
+				if err != nil {
+					return fmt.Errorf("failed to list service accounts: %w", err)
+				}
+
+				if uint32(existing.Len()) >= maxServiceAccounts {
+					return fmt.Errorf("maximum number of service accounts (%d) reached", maxServiceAccounts)
+				}
+
+				return nil
+			}
+
+			maxUsers := limits.GetMaxUsers()
+			if maxUsers == 0 {
+				return nil
+			}
+
+			existing, err := safe.StateListAll[*authres.Identity](ctx, st,
+				state.WithLabelQuery(resource.LabelExists(authres.LabelIdentityTypeServiceAccount, resource.NotMatches)),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to list users: %w", err)
+			}
+
+			if uint32(existing.Len()) >= maxUsers {
+				return fmt.Errorf("maximum number of users (%d) reached", maxUsers)
+			}
+
+			return nil
+		})),
+	}
+}
+
+func identityValidationOptions(samlConfig config.SAML) []validated.StateOption {
+	return []validated.StateOption{
+		validated.WithCreateValidations(validated.NewCreateValidationForType(func(_ context.Context, res *authres.Identity, _ ...state.CreateOption) error {
 			var errs error
 
 			if hasUppercaseLetters(res.Metadata().ID()) {
 				errs = multierror.Append(errs, errors.New("must be lowercase"))
 			}
 
-			// allow non-email identities for internal actors and for users coming from the SAML provider
-			if samlConfig.GetEnabled() || actor.ContextIsInternalActor(ctx) {
-				return nil
+			// allow non-email identities for service accounts and for users coming from the SAML provider
+			_, isServiceAccount := res.Metadata().Labels().Get(authres.LabelIdentityTypeServiceAccount)
+			if samlConfig.GetEnabled() || isServiceAccount {
+				return errs
 			}
 
 			if _, err := mail.ParseAddress(res.Metadata().ID()); err != nil {
@@ -973,21 +1019,6 @@ func identityValidationOptions(samlConfig config.SAML) []validated.StateOption {
 			}
 
 			return errs
-		})),
-		validated.WithUpdateValidations(validated.NewUpdateValidationForType(func(ctx context.Context, res *authres.Identity, newRes *authres.Identity, _ ...state.UpdateOption) error {
-			if !samlConfig.GetEnabled() || actor.ContextIsInternalActor(ctx) {
-				return nil
-			}
-
-			changed := newRes.TypedSpec().Value.UserId != res.TypedSpec().Value.UserId ||
-				!newRes.Metadata().Labels().Equal(*res.Metadata().Labels()) ||
-				!newRes.Metadata().Annotations().Equal(*res.Metadata().Annotations())
-
-			if changed {
-				return errors.New("updating identity is not allowed in SAML mode")
-			}
-
-			return nil
 		})),
 	}
 }
@@ -1412,6 +1443,9 @@ func joinTokenValidationOptions(st state.State) []validated.StateOption {
 	}
 
 	return []validated.StateOption{
+		validated.WithCreateValidations(validated.NewCreateValidationForType(func(_ context.Context, res *siderolink.JoinToken, _ ...state.CreateOption) error {
+			return validateJoinTokenName(res)
+		})),
 		validated.WithUpdateValidations(validated.NewUpdateValidationForType(func(_ context.Context, old, res *siderolink.JoinToken, _ ...state.UpdateOption) error {
 			if old.TypedSpec().Value.Name == res.TypedSpec().Value.Name {
 				return nil

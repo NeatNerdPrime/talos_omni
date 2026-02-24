@@ -221,6 +221,7 @@ func TestIntegration(t *testing.T) {
 		t.Run("CleanState", testCleanState(testOptions))
 		t.Run("TalosImageGeneration", testImageGeneration(testOptions))
 		t.Run("CLICommands", testCLICommands(testOptions))
+		t.Run("AccountLimits", testAccountLimits(testOptions))
 		t.Run("KubernetesNodeAudit", testKubernetesNodeAudit(testOptions))
 		t.Run("ForcedMachineRemoval", testForcedMachineRemoval(testOptions))
 		t.Run("ImmediateClusterDestruction", testImmediateClusterDestruction(testOptions))

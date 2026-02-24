@@ -1126,59 +1126,6 @@ func TestClusterImport(t *testing.T) {
 	assert.NoError(st.Destroy(ctx, cluster.Metadata()))
 }
 
-func TestIdentitySAMLValidation(t *testing.T) {
-	t.Parallel()
-
-	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
-	t.Cleanup(cancel)
-
-	innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
-	st := validated.NewState(innerSt, omni.IdentityValidationOptions(config.SAML{
-		Enabled: new(true),
-	})...)
-
-	user := auth.NewIdentity("aaa@example.org")
-
-	assert := assert.New(t)
-
-	assert.NoError(innerSt.Create(ctx, user))
-
-	s := state.WrapCore(st)
-
-	checkError := func(err error) {
-		assert.Error(err)
-		assert.True(validated.IsValidationError(err), "expected validation error")
-		assert.ErrorContains(err, "updating identity is not allowed in SAML mode")
-	}
-
-	_, err := safe.StateUpdateWithConflicts(ctx, s, user.Metadata(), func(n *auth.Identity) error {
-		n.TypedSpec().Value.UserId = "bacd"
-
-		return nil
-	})
-
-	checkError(err)
-
-	_, err = safe.StateUpdateWithConflicts(ctx, s, user.Metadata(), func(n *auth.Identity) error {
-		n.Metadata().Labels().Set("label", "a")
-
-		return nil
-	})
-
-	checkError(err)
-
-	_, err = safe.StateUpdateWithConflicts(ctx, s, user.Metadata(), func(n *auth.Identity) error {
-		n.Metadata().Annotations().Set("key", "value")
-
-		return nil
-	})
-
-	checkError(err)
-
-	_, err = s.Teardown(ctx, user.Metadata())
-	assert.NoError(err)
-}
-
 func TestCreateIdentityValidation(t *testing.T) {
 	t.Parallel()
 
@@ -1797,6 +1744,15 @@ func TestJoinTokenValidation(t *testing.T) {
 	st := validated.NewState(innerSt, omni.JoinTokenValidationOptions(innerSt)...)
 	wrappedState := state.WrapCore(st)
 
+	emptyNameToken := siderolink.NewJoinToken("empty-name-token")
+
+	assert.ErrorContains(t, wrappedState.Create(ctx, emptyNameToken), "empty")
+
+	longNameToken := siderolink.NewJoinToken("long-name-token")
+	longNameToken.TypedSpec().Value.Name = "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm"
+
+	assert.ErrorContains(t, wrappedState.Create(ctx, longNameToken), "long")
+
 	normalJoinToken := siderolink.NewJoinToken("1234567812345678")
 	normalJoinToken.TypedSpec().Value.Name = "hello"
 
@@ -2129,4 +2085,140 @@ func (m *mockEtcdBackupStore) Download(_ context.Context, _ []byte, clusterUUID,
 	}
 
 	return etcdbackup.BackupData{}, nil, errors.New("not found")
+}
+
+func TestAccountLimitsValidation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("user limits", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+		t.Cleanup(cancel)
+
+		maxUsers := 2
+
+		innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
+		st := state.WrapCore(validated.NewState(innerSt, omni.AccountLimitsValidationOptions(innerSt, config.AuthLimits{
+			MaxUsers: new(uint32(maxUsers)),
+		})...))
+
+		require.NoError(t, st.Create(ctx, auth.NewIdentity("user1@example.com")))
+		require.NoError(t, st.Create(ctx, auth.NewIdentity("user2@example.com")))
+
+		err := st.Create(ctx, auth.NewIdentity("user3@example.com"))
+		require.True(t, validated.IsValidationError(err))
+		require.ErrorContains(t, err, fmt.Sprintf("maximum number of users (%d) reached", maxUsers))
+
+		sa := auth.NewIdentity("sa1")
+		sa.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+		require.NoError(t, st.Create(ctx, sa))
+	})
+
+	t.Run("service account limits", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+		t.Cleanup(cancel)
+
+		maxSAs := 1
+
+		innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
+		st := state.WrapCore(validated.NewState(innerSt, omni.AccountLimitsValidationOptions(innerSt, config.AuthLimits{
+			MaxServiceAccounts: new(uint32(maxSAs)),
+		})...))
+
+		sa1 := auth.NewIdentity("sa1")
+		sa1.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+		require.NoError(t, st.Create(ctx, sa1))
+
+		sa2 := auth.NewIdentity("sa2")
+		sa2.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+		err := st.Create(ctx, sa2)
+		require.True(t, validated.IsValidationError(err))
+		require.ErrorContains(t, err, fmt.Sprintf("maximum number of service accounts (%d) reached", maxSAs))
+
+		require.NoError(t, st.Create(ctx, auth.NewIdentity("user1@example.com")))
+	})
+
+	t.Run("zero means unlimited", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+		t.Cleanup(cancel)
+
+		innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
+		st := state.WrapCore(validated.NewState(innerSt, omni.AccountLimitsValidationOptions(innerSt, config.AuthLimits{
+			MaxServiceAccounts: new(uint32(0)),
+			MaxUsers:           new(uint32(0)),
+		})...))
+
+		for i := range 5 {
+			require.NoError(t, st.Create(ctx, auth.NewIdentity(fmt.Sprintf("user%d@example.com", i))))
+
+			sa := auth.NewIdentity(fmt.Sprintf("sa%d", i))
+			sa.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+			require.NoError(t, st.Create(ctx, sa))
+		}
+	})
+
+	t.Run("existing accounts beyond limit are allowed", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+		t.Cleanup(cancel)
+
+		maxUsers := 1
+
+		innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
+
+		require.NoError(t, innerSt.Create(ctx, auth.NewIdentity("existing1@example.com")))
+		require.NoError(t, innerSt.Create(ctx, auth.NewIdentity("existing2@example.com")))
+
+		st := state.WrapCore(validated.NewState(innerSt, omni.AccountLimitsValidationOptions(innerSt, config.AuthLimits{
+			MaxUsers: new(uint32(maxUsers)),
+		})...))
+
+		err := st.Create(ctx, auth.NewIdentity("new@example.com"))
+		require.True(t, validated.IsValidationError(err))
+		require.ErrorContains(t, err, fmt.Sprintf("maximum number of users (%d) reached", maxUsers))
+	})
+
+	t.Run("both limits together", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+		t.Cleanup(cancel)
+
+		maxUsers := 1
+		maxSAs := 1
+
+		innerSt := state.WrapCore(namespaced.NewState(inmem.Build))
+		st := state.WrapCore(validated.NewState(innerSt, omni.AccountLimitsValidationOptions(innerSt, config.AuthLimits{
+			MaxUsers:           new(uint32(maxUsers)),
+			MaxServiceAccounts: new(uint32(maxSAs)),
+		})...))
+
+		require.NoError(t, st.Create(ctx, auth.NewIdentity("user@example.com")))
+
+		sa := auth.NewIdentity("sa1")
+		sa.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+		require.NoError(t, st.Create(ctx, sa))
+
+		err := st.Create(ctx, auth.NewIdentity("user2@example.com"))
+		require.True(t, validated.IsValidationError(err))
+		require.ErrorContains(t, err, fmt.Sprintf("maximum number of users (%d) reached", maxUsers))
+
+		sa2 := auth.NewIdentity("sa2")
+		sa2.Metadata().Labels().Set(auth.LabelIdentityTypeServiceAccount, "")
+
+		err = st.Create(ctx, sa2)
+		require.True(t, validated.IsValidationError(err))
+		require.ErrorContains(t, err, fmt.Sprintf("maximum number of service accounts (%d) reached", maxSAs))
+	})
 }

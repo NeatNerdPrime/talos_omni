@@ -455,7 +455,8 @@
         "saml",
         "oidc",
         "keyPruner",
-        "initialServiceAccount"
+        "initialServiceAccount",
+        "limits"
       ],
       "if": {
         "title": "Check Auth0",
@@ -607,6 +608,31 @@
         "initialServiceAccount": {
           "description": "InitialServiceAccount contains configuration for the initial service account created when Omni is run for the first time.",
           "$ref": "#/definitions/InitialServiceAccount"
+        },
+        "limits": {
+          "description": "Limits contains configuration for user and service account limits.",
+          "$ref": "#/definitions/AuthLimits"
+        }
+      }
+    },
+    "AuthLimits": {
+      "type": "object",
+      "properties": {
+        "maxUsers": {
+          "description": "MaxUsers is the maximum number of users allowed. 0 means unlimited.",
+          "type": "integer",
+          "minimum": 0,
+          "goJSONSchema": {
+            "type": "uint32"
+          }
+        },
+        "maxServiceAccounts": {
+          "description": "MaxServiceAccounts is the maximum number of service accounts allowed. 0 means unlimited.",
+          "type": "integer",
+          "minimum": 0,
+          "goJSONSchema": {
+            "type": "uint32"
+          }
         }
       }
     },

@@ -299,6 +299,12 @@ func defineAuthFlags(rootCmd *cobra.Command, rootCmdFlagBinder *FlagBinder, flag
 
 	rootCmd.MarkFlagsMutuallyExclusive("auth-saml-url", "auth-saml-metadata")
 
+	// Limits
+	rootCmdFlagBinder.Uint32Var("auth-max-users",
+		flagDescription("auth.limits.maxUsers", schema), &flagConfig.Auth.Limits.MaxUsers)
+	rootCmdFlagBinder.Uint32Var("auth-max-service-accounts",
+		flagDescription("auth.limits.maxServiceAccounts", schema), &flagConfig.Auth.Limits.MaxServiceAccounts)
+
 	// OIDC
 	rootCmdFlagBinder.BoolVar("auth-oidc-enabled", flagDescription("auth.oidc.enabled", schema), &flagConfig.Auth.Oidc.Enabled)
 	rootCmdFlagBinder.StringVar("auth-oidc-provider-url", flagDescription("auth.oidc.providerURL", schema), &flagConfig.Auth.Oidc.ProviderURL)

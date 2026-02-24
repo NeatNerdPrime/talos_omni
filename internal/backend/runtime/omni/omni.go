@@ -340,6 +340,7 @@ func NewRuntime(cfg *config.Params, talosClientFactory *talos.ClientFactory, dns
 		machineSetValidationOptions(defaultState, storeFactory),
 		machineClassValidationOptions(defaultState),
 		identityValidationOptions(cfg.Auth.Saml),
+		accountLimitsValidationOptions(defaultState, cfg.Auth.Limits),
 		exposedServiceValidationOptions(),
 		configPatchValidationOptions(defaultState),
 		etcdManualBackupValidationOptions(),

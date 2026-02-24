@@ -83,7 +83,7 @@ func MakeServiceServers(
 
 	servers := []ServiceServer{
 		newResourceServer(
-			state,
+			omniRuntime.ValidatedState(),
 			runtimes,
 			omniRuntime.GetCOSIRuntime(),
 		),

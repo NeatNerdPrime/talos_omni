@@ -83,6 +83,28 @@ func (s *Auth0) SetUseFormData(v bool) {
 	s.UseFormData = &v
 }
 
+func (s *AuthLimits) GetMaxServiceAccounts() uint32 {
+	if s == nil || s.MaxServiceAccounts == nil {
+		return *new(uint32)
+	}
+	return *s.MaxServiceAccounts
+}
+
+func (s *AuthLimits) SetMaxServiceAccounts(v uint32) {
+	s.MaxServiceAccounts = &v
+}
+
+func (s *AuthLimits) GetMaxUsers() uint32 {
+	if s == nil || s.MaxUsers == nil {
+		return *new(uint32)
+	}
+	return *s.MaxUsers
+}
+
+func (s *AuthLimits) SetMaxUsers(v uint32) {
+	s.MaxUsers = &v
+}
+
 func (s *BoltDB) GetPath() string {
 	if s == nil || s.Path == nil {
 		return *new(string)

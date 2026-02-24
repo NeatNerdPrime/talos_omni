@@ -101,6 +101,21 @@ func Create(ctx context.Context, st state.State, name, userRole string, useUserR
 		return "", err
 	}
 
+	// create the identity resource representing the service account
+	identity := authres.NewIdentity(id)
+	identity.TypedSpec().Value.UserId = newUserID
+	identity.Metadata().Labels().Set(authres.LabelIdentityUserID, newUserID)
+	identity.Metadata().Labels().Set(authres.LabelIdentityTypeServiceAccount, "")
+
+	if sa.IsInfraProvider {
+		identity.Metadata().Labels().Set(authres.LabelInfraProvider, "")
+	}
+
+	err = st.Create(ctx, identity)
+	if err != nil {
+		return "", err
+	}
+
 	// create the user resource representing the service account with the same scopes as the public key
 	user := authres.NewUser(newUserID)
 	user.TypedSpec().Value.Role = publicKeyResource.TypedSpec().Value.GetRole()
@@ -111,21 +126,8 @@ func Create(ctx context.Context, st state.State, name, userRole string, useUserR
 
 	err = st.Create(ctx, user)
 	if err != nil {
-		return "", err
-	}
+		_ = st.Destroy(ctx, identity.Metadata()) //nolint:errcheck // best-effort cleanup
 
-	// create the identity resource representing the service account
-	identity := authres.NewIdentity(id)
-	identity.TypedSpec().Value.UserId = user.Metadata().ID()
-	identity.Metadata().Labels().Set(authres.LabelIdentityUserID, newUserID)
-	identity.Metadata().Labels().Set(authres.LabelIdentityTypeServiceAccount, "")
-
-	if sa.IsInfraProvider {
-		identity.Metadata().Labels().Set(authres.LabelInfraProvider, "")
-	}
-
-	err = st.Create(ctx, identity)
-	if err != nil {
 		return "", err
 	}
 
