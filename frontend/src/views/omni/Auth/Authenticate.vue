@@ -12,7 +12,7 @@ import { jwtDecode } from 'jwt-decode'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { b64Encode, type fetchOption } from '@/api/fetch.pb'
+import { b64Encode, type fetchOption, RequestError } from '@/api/fetch.pb'
 import { Code } from '@/api/google/rpc/code.pb'
 import { AuthService } from '@/api/omni/auth/auth.pb'
 import { withMetadata } from '@/api/options'
@@ -182,23 +182,8 @@ const generatePublicKey = async (identity: string) => {
   await router.replace({ path: !redirect.startsWith('/') ? '/' : redirect })
 }
 
-let renewIdToken = false
-
 const confirmPublicKey = async (publicKeyId: string, keyPair?: CryptoKeyPair) => {
   try {
-    // If the JWT validation has failed on the backend at the moment of clicking "Login", get a new ID token from Auth0 on the next click.
-    // This way, the user will not have to reload the page after validating their email - they can simply click "Login" again to get in.
-    if (renewIdToken && auth0) {
-      renewIdToken = false
-
-      await auth0.checkSession({
-        cacheMode: 'off',
-      })
-
-      user.value = auth0.user.value
-      idToken = auth0.idTokenClaims.value!.__raw
-    }
-
     const options: fetchOption[] = []
 
     const metadata: Record<string, string> = {}
@@ -233,11 +218,12 @@ const confirmPublicKey = async (publicKeyId: string, keyPair?: CryptoKeyPair) =>
 
     confirmed.value = true
   } catch (e) {
-    showError('Failed to confirm public key', e.message)
-
-    if (e?.code === Code.UNAUTHENTICATED && auth0) {
-      renewIdToken = true
+    if (e instanceof RequestError && e.code === Code.UNAUTHENTICATED && auth0) {
+      // Force re-authentication
+      return await auth0.loginWithRedirect({ authorizationParams: { max_age: 0 } })
     }
+
+    showError('Failed to confirm public key', e.message)
 
     throw e
   }
