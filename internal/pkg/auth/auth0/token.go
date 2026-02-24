@@ -21,6 +21,7 @@ import (
 const (
 	tokenValidationCacheDuration    = 5 * time.Minute
 	tokenValidationAllowedClockSkew = 5 * time.Minute
+	tokenValidationMaxAge           = 2 * time.Minute
 )
 
 // IDTokenVerifier is an Auth0 ID token verifier.
@@ -73,6 +74,20 @@ func (v *IDTokenVerifier) Verify(ctx context.Context, token string) (*jwt.Claims
 		return nil, errors.New("unexpected custom claims type")
 	}
 
+	if customClaims.AuthTime == 0 {
+		return nil, errors.New("auth_time claim is missing")
+	}
+
+	authTime := time.Unix(customClaims.AuthTime, 0)
+
+	if authTime.After(time.Now().Add(tokenValidationAllowedClockSkew)) {
+		return nil, errors.New("auth_time is in the future")
+	}
+
+	if time.Since(authTime) > tokenValidationMaxAge+tokenValidationAllowedClockSkew {
+		return nil, errors.New("re-authentication required")
+	}
+
 	return &jwt.Claims{
 		VerifiedEmail: customClaims.Email,
 	}, nil
@@ -89,6 +104,9 @@ type CustomIDClaims struct {
 	// Email is the email address of the user.
 	Email         string `json:"email"`
 	EmailVerified bool   `json:"email_verified"`
+	// AuthTime is the time when the user last authenticated, as a Unix timestamp.
+	// It is included when max_age or prompt=login is used in the auth request.
+	AuthTime int64 `json:"auth_time"`
 }
 
 // Validate validates the claims on the CustomIDClaims.
