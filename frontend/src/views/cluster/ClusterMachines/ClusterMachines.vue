@@ -5,7 +5,9 @@ Use of this software is governed by the Business Source License
 included in the LICENSE file.
 -->
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useSessionStorage } from '@vueuse/core'
+import { AccordionRoot } from 'reka-ui'
+import { computed, watchEffect } from 'vue'
 
 import { Runtime } from '@/api/common/omni.pb'
 import type { ClusterDiagnosticsSpec, MachineSetSpec } from '@/api/omni/specs/omni.pb'
@@ -20,14 +22,12 @@ import { useResourceWatch } from '@/methods/useResourceWatch'
 
 import MachineSet from './MachineSet.vue'
 
-const { clusterID, pauseWatches } = defineProps<{
+const { clusterID } = defineProps<{
   clusterID: string
-  pauseWatches?: boolean
   isSubgrid?: boolean
 }>()
 
-const { data: machineSets } = useResourceWatch<MachineSetSpec>(() => ({
-  skip: pauseWatches,
+const { data: machineSets, loading: machineSetsLoading } = useResourceWatch<MachineSetSpec>(() => ({
   resource: {
     type: MachineSetType,
     namespace: DefaultNamespace,
@@ -36,15 +36,17 @@ const { data: machineSets } = useResourceWatch<MachineSetSpec>(() => ({
   selectors: [`${LabelCluster}=${clusterID}`],
 }))
 
-const { data: clusterDiagnostics } = useResourceWatch<ClusterDiagnosticsSpec>(() => ({
-  skip: pauseWatches,
-  runtime: Runtime.Omni,
-  resource: {
-    namespace: DefaultNamespace,
-    type: ClusterDiagnosticsType,
-    id: clusterID,
-  },
-}))
+const { data: clusterDiagnostics, loading: diagnosticsLoading } =
+  useResourceWatch<ClusterDiagnosticsSpec>(() => ({
+    runtime: Runtime.Omni,
+    resource: {
+      namespace: DefaultNamespace,
+      type: ClusterDiagnosticsType,
+      id: clusterID,
+    },
+  }))
+
+const loading = computed(() => machineSetsLoading.value || diagnosticsLoading.value)
 
 const nodesWithDiagnostics = computed(() => {
   const nodes = clusterDiagnostics.value?.spec.nodes?.map((node) => node.id ?? '') ?? []
@@ -57,10 +59,29 @@ const machineSetIds = computed(() =>
     machineSets.value.map((machineSet) => machineSet.metadata.id ?? ''),
   ),
 )
+
+const wasSet = useSessionStorage(() => `cluster-machine-sets-expanded-${clusterID}-set`, false)
+const expandedMachineSetIds = useSessionStorage<string[]>(
+  () => `cluster-machine-sets-expanded-${clusterID}`,
+  [],
+)
+
+watchEffect(() => {
+  if (machineSetIds.value.length && !wasSet.value) {
+    expandedMachineSetIds.value = machineSetIds.value
+    wasSet.value = true
+  }
+})
 </script>
 
 <template>
-  <div :class="isSubgrid && 'col-span-full grid grid-cols-subgrid'">
+  <AccordionRoot
+    v-if="!loading"
+    v-model="expandedMachineSetIds"
+    type="multiple"
+    :class="isSubgrid && 'col-span-full grid grid-cols-subgrid'"
+    class="collapsible-content-child"
+  >
     <MachineSet
       v-for="id in machineSetIds"
       :key="id"
@@ -68,5 +89,20 @@ const machineSetIds = computed(() =>
       :nodes-with-diagnostics="nodesWithDiagnostics"
       :is-subgrid
     />
-  </div>
+  </AccordionRoot>
 </template>
+
+<style>
+.collapsible-content-child {
+  animation: slideDown 200ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0% 0);
+  }
+}
+</style>

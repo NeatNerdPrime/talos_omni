@@ -6,6 +6,7 @@ included in the LICENSE file.
 -->
 <script setup lang="ts">
 import pluralize from 'pluralize'
+import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
 import { computed, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -206,21 +207,36 @@ const sectionHeadingId = useId()
 </script>
 
 <template>
-  <section
+  <AccordionItem
     v-if="machines.length > 0 || requests.length > 0"
+    as="section"
+    :value="machineSetId"
     class="grid border-t-8 border-naturals-n4 text-naturals-n14"
     :class="
       isSubgrid ? 'col-span-full grid-cols-subgrid' : 'grid-cols-[repeat(4,1fr)_--spacing(18)]'
     "
     :aria-labelledby="sectionHeadingId"
   >
-    <div class="col-span-full grid grid-cols-subgrid items-center p-2 pr-4 text-xs">
-      <header class="flex max-w-40 items-center gap-2 truncate rounded bg-naturals-n4 px-3 py-2">
-        <TIcon icon="server-stack" class="size-4 shrink-0" aria-hidden="true" />
-        <h3 :id="sectionHeadingId" class="flex-1 truncate">
-          {{ machineSetTitle(clusterID, machineSetId) }}
-        </h3>
-      </header>
+    <AccordionHeader class="col-span-full grid grid-cols-subgrid items-center p-2 pr-4 text-xs">
+      <AccordionTrigger
+        :id="sectionHeadingId"
+        class="group flex items-stretch gap-0.5 truncate text-left"
+      >
+        <div class="flex shrink-0 items-center rounded-l bg-naturals-n4 px-0.5">
+          <TIcon
+            class="size-5 transition-transform duration-250 group-data-[state=open]:rotate-180"
+            icon="drop-up"
+            aria-hidden="true"
+          />
+        </div>
+
+        <div class="flex items-center gap-1 rounded-r bg-naturals-n4 px-2 py-1.5">
+          <TIcon icon="server-stack" class="size-4 shrink-0" aria-hidden="true" />
+          <span class="flex-1 truncate">
+            {{ machineSetTitle(clusterID, machineSetId) }}
+          </span>
+        </div>
+      </AccordionTrigger>
 
       <TSpinner v-if="scaling" class="size-4 shrink-0" aria-label="loading" />
       <div v-else-if="!editingMachinesCount" class="flex items-center gap-1">
@@ -280,33 +296,65 @@ const sectionHeadingId = useId()
           </TActionsBoxItem>
         </TActionsBox>
       </div>
-    </div>
+    </AccordionHeader>
 
-    <ClusterMachine
-      v-for="machine in machines"
-      :id="machine.metadata.id"
-      :key="itemID(machine)"
-      class="border-t border-naturals-n4 last-of-type:rounded-b-md"
-      :has-diagnostic-info="nodesWithDiagnostics?.has(machine.metadata.id!)"
-      :machine="machine"
-      :delete-disabled="!canRemoveMachine"
-    />
-
-    <MachineRequest
-      v-for="request in requests"
-      :key="itemID(request)"
-      class="border-t border-naturals-n4 last-of-type:rounded-b-md"
-      :request-status="request"
-    />
-
-    <div
-      v-if="hiddenMachinesCount > 0"
-      class="col-span-full flex items-center gap-1 border-t border-naturals-n4 p-4 pl-9 text-xs"
+    <AccordionContent
+      class="accordion-content col-span-full grid grid-cols-subgrid overflow-hidden"
     >
-      {{ pluralize('machine', hiddenMachinesCount, true) }} are hidden
-      <TButton variant="subtle" size="xs" @click="showMachinesCount = undefined">
-        <span class="text-xs">Show all...</span>
-      </TButton>
-    </div>
-  </section>
+      <ClusterMachine
+        v-for="machine in machines"
+        :id="machine.metadata.id"
+        :key="itemID(machine)"
+        class="border-t border-naturals-n4 last-of-type:rounded-b-md"
+        :has-diagnostic-info="nodesWithDiagnostics?.has(machine.metadata.id!)"
+        :machine="machine"
+        :delete-disabled="!canRemoveMachine"
+      />
+
+      <MachineRequest
+        v-for="request in requests"
+        :key="itemID(request)"
+        class="border-t border-naturals-n4 last-of-type:rounded-b-md"
+        :request-status="request"
+      />
+
+      <div
+        v-if="hiddenMachinesCount > 0"
+        class="col-span-full flex items-center gap-1 border-t border-naturals-n4 p-4 pl-9 text-xs"
+      >
+        {{ pluralize('machine', hiddenMachinesCount, true) }} are hidden
+        <TButton variant="subtle" size="xs" @click="showMachinesCount = undefined">
+          <span class="text-xs">Show all...</span>
+        </TButton>
+      </div>
+    </AccordionContent>
+  </AccordionItem>
 </template>
+
+<style scoped>
+.accordion-content[data-state='open'] {
+  animation: slideDown 200ms ease-out;
+}
+
+.accordion-content[data-state='closed'] {
+  animation: slideUp 200ms ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--reka-accordion-content-height);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--reka-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+</style>

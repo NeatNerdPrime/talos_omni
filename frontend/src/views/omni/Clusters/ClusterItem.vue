@@ -5,8 +5,9 @@ Use of this software is governed by the Business Source License
 included in the LICENSE file.
 -->
 <script setup lang="ts">
-import { useElementSize, useSessionStorage } from '@vueuse/core'
-import { computed, ref, useId, useTemplateRef } from 'vue'
+import { useSessionStorage } from '@vueuse/core'
+import { CollapsibleContent, CollapsibleRoot, CollapsibleTrigger } from 'reka-ui'
+import { computed, ref, useId } from 'vue'
 import WordHighlighter from 'vue-word-highlighter'
 
 import type { Resource } from '@/api/grpc'
@@ -57,30 +58,23 @@ const locked = computed(() => item.metadata.annotations?.[ClusterLocked] !== und
 const regionId = useId()
 const labelId = useId()
 
-const slider = useTemplateRef('slider')
-const { height } = useElementSize(slider)
-
 const clusterDestroyDialogOpen = ref(false)
 </script>
 
 <template>
-  <li
+  <CollapsibleRoot
+    v-model:open="expanded"
+    as="li"
     class="col-span-full grid grid-cols-subgrid overflow-hidden rounded border border-naturals-n5 text-xs"
     :aria-labelledby="labelId"
   >
-    <div
-      tabindex="0"
-      role="button"
-      :aria-expanded="expanded"
-      :aria-controls="regionId"
+    <CollapsibleTrigger
       :aria-labelledby="labelId"
-      class="col-span-full grid cursor-pointer grid-cols-subgrid items-center bg-naturals-n1 p-4 pl-2 hover:bg-naturals-n3"
-      @click="expanded = !expanded"
+      class="group col-span-full grid grid-cols-subgrid items-center bg-naturals-n1 p-4 pl-2 text-left hover:bg-naturals-n3"
     >
       <div class="flex min-w-0 items-center gap-2">
         <TIcon
-          :class="{ 'rotate-180': expanded }"
-          class="size-5 shrink-0 rounded-md bg-naturals-n4 transition-transform duration-250 hover:text-naturals-n13"
+          class="size-5 shrink-0 rounded-md bg-naturals-n4 transition-transform duration-250 group-data-[state=open]:rotate-180 hover:text-naturals-n13"
           icon="drop-up"
           aria-hidden="true"
         />
@@ -178,23 +172,32 @@ const clusterDestroyDialogOpen = ref(false)
           </TActionsBoxItem>
         </TActionsBox>
       </div>
-    </div>
+    </CollapsibleTrigger>
 
-    <section
+    <CollapsibleContent
       :id="regionId"
+      as="section"
       :aria-labelledby="labelId"
-      class="col-span-full grid grid-cols-subgrid transition-all duration-300"
-      :style="{ height: expanded ? `${height}px` : '0' }"
+      class="collapsible-content col-span-full grid grid-cols-subgrid"
     >
-      <ClusterMachines
-        ref="slider"
-        :pause-watches="!expanded"
-        class="h-min"
-        :cluster-i-d="item.metadata.id!"
-        is-subgrid
-      />
-    </section>
+      <ClusterMachines :cluster-i-d="item.metadata.id!" is-subgrid />
+    </CollapsibleContent>
 
     <ClusterDestroy v-model:open="clusterDestroyDialogOpen" :cluster-id="item.metadata.id!" />
-  </li>
+  </CollapsibleRoot>
 </template>
+
+<style>
+.collapsible-content[data-state='closed'] {
+  animation: slideUp 200ms ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    height: var(--reka-collapsible-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+</style>

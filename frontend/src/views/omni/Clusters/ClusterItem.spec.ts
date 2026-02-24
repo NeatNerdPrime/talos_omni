@@ -2,12 +2,13 @@
 //
 // Use of this software is governed by the Business Source License
 // included in the LICENSE file.
-import { createGetMock, createWatchStreamMock } from '@msw/server'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { createGetMock, createWatchStreamMock, server } from '@msw/server'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import { http, HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { createRouter, createWebHistory } from 'vue-router'
 
-import { ClusterLocked } from '@/api/resources'
+import { ClusterDiagnosticsType, ClusterLocked, MachineSetType } from '@/api/resources'
 import { routes } from '@/router'
 
 import ClusterItem from './ClusterItem.vue'
@@ -62,4 +63,45 @@ test('lock if locked', async () => {
   await waitFor(() => {
     expect(screen.getByLabelText('locked')).toBeInTheDocument()
   })
+})
+
+test('collapsing stops ClusterMachines resource watches', async () => {
+  let activeWatches = 0
+
+  createWatchStreamMock()
+  createGetMock()
+
+  server.use(
+    http.post('/omni.resources.ResourceService/Watch', async ({ request }) => {
+      const body = (await request.clone().json()) as { type?: string }
+      if (![MachineSetType, ClusterDiagnosticsType].includes(body.type ?? '')) return
+
+      activeWatches++
+      request.signal.addEventListener('abort', () => activeWatches--)
+
+      return new HttpResponse(new ReadableStream(), {
+        headers: {
+          'content-type': 'application/json',
+          'Grpc-metadata-content-type': 'application/grpc',
+        },
+      })
+    }),
+  )
+
+  render(ClusterItem, {
+    global: {
+      stubs: ['Tooltip', 'TActionsBox'],
+      plugins: [createRouter({ history: createWebHistory(), routes })],
+    },
+    props: {
+      item: { spec: {}, metadata: { id: 'collapse-watches-test' } },
+      defaultOpen: true,
+    },
+  })
+
+  await waitFor(() => expect(activeWatches).toBe(2))
+
+  fireEvent.click(document.querySelector('button.group')!)
+
+  await waitFor(() => expect(activeWatches).toBe(0))
 })
