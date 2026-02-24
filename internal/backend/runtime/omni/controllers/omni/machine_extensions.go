@@ -18,6 +18,7 @@ import (
 	"github.com/cosi-project/runtime/pkg/state"
 	"github.com/siderolabs/gen/optional"
 	"github.com/siderolabs/gen/xerrors"
+	"github.com/siderolabs/gen/xslices"
 	"go.uber.org/zap"
 
 	"github.com/siderolabs/omni/client/pkg/omni/resources"
@@ -208,7 +209,7 @@ func (ctrl *MachineExtensionsController) Reconcile(ctx context.Context, logger *
 
 		tracker.keep(status)
 
-		if err = safe.WriterModify[*omni.MachineExtensions](ctx, r, status, func(r *omni.MachineExtensions) error {
+		if err = safe.WriterModify(ctx, r, status, func(r *omni.MachineExtensions) error {
 			if !ctrl.shouldRecalculateExtensions(r, configs) {
 				return nil
 			}
@@ -262,50 +263,46 @@ func (ctrl *MachineExtensionsController) determineExtensions(cm *omni.ClusterMac
 	msID, _ := cm.Metadata().Labels().Get(omni.LabelMachineSet)
 	clusterID, _ := cm.Metadata().Labels().Get(omni.LabelCluster)
 
-	var clusterMachineLevel, machineSetLevel, clusterLevel *omni.ExtensionsConfiguration
-
-	for _, config := range configs {
-		clusterMachine, ok := config.Metadata().Labels().Get(omni.LabelClusterMachine)
-		if ok && clusterMachine == cmID {
-			clusterMachineLevel = config
-
-			continue
+	for _, labels := range []struct {
+		labelName  string
+		labelValue string
+	}{
+		{omni.LabelClusterMachine, cmID},
+		{omni.LabelMachineSet, msID},
+		{omni.LabelCluster, clusterID},
+	} {
+		config := matchExtensionConfigByLabel(labels.labelName, labels.labelValue, configs)
+		if config != nil {
+			return config.TypedSpec().Value.Extensions
 		}
-
-		if clusterMachineLevel != nil {
-			continue
-		}
-
-		machineSet, ok := config.Metadata().Labels().Get(omni.LabelMachineSet)
-		if ok && machineSet == msID {
-			machineSetLevel = config
-
-			continue
-		}
-
-		if machineSetLevel != nil {
-			continue
-		}
-
-		cluster, ok := config.Metadata().Labels().Get(omni.LabelCluster)
-		if ok && cluster == clusterID {
-			clusterLevel = config
-		}
-	}
-
-	if clusterMachineLevel != nil {
-		return clusterMachineLevel.TypedSpec().Value.Extensions
-	}
-
-	if machineSetLevel != nil {
-		return machineSetLevel.TypedSpec().Value.Extensions
-	}
-
-	if clusterLevel != nil {
-		return clusterLevel.TypedSpec().Value.Extensions
 	}
 
 	return nil
+}
+
+func matchExtensionConfigByLabel(labelName, labelValue string, configs []*omni.ExtensionsConfiguration) *omni.ExtensionsConfiguration {
+	configs = xslices.Filter(configs, func(cfg *omni.ExtensionsConfiguration) bool {
+		val, ok := cfg.Metadata().Labels().Get(labelName)
+
+		// special handling for the cluster label - if the config has a cluster label, it should not have machine set or cluster machine labels
+		if labelName == omni.LabelCluster {
+			if _, wrongLevel := cfg.Metadata().Labels().Get(omni.LabelClusterMachine); wrongLevel {
+				return false
+			}
+
+			if _, wrongLevel := cfg.Metadata().Labels().Get(omni.LabelMachineSet); wrongLevel {
+				return false
+			}
+		}
+
+		return ok && val == labelValue
+	})
+
+	if len(configs) == 0 {
+		return nil
+	}
+
+	return configs[len(configs)-1]
 }
 
 func (ctrl *MachineExtensionsController) getRelatedClusterMachines(ctx context.Context, r controller.QRuntime, configuration *omni.ExtensionsConfiguration) ([]*omni.ClusterMachine, error) {

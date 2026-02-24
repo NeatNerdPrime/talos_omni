@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosi-project/runtime/pkg/resource/kvutils"
 	"github.com/cosi-project/runtime/pkg/resource/rtestutils"
 	"github.com/cosi-project/runtime/pkg/state"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/helpers"
@@ -26,118 +26,107 @@ type MachineExtensionsSuite struct {
 	OmniSuite
 }
 
-func (suite *MachineExtensionsSuite) TestReconcile() {
-	suite.startRuntime()
+func TestMachineExtensionsReconcile(t *testing.T) {
+	t.Parallel()
 
-	suite.Require().NoError(suite.runtime.RegisterQController(omnictrl.NewMachineExtensionsController()))
-
-	machine := omni.NewClusterMachine("test")
-	machine.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-	machine.Metadata().Labels().Set(omni.LabelMachineSet, "machineSet")
-
-	clusterSchematic := omni.NewExtensionsConfiguration("aaa")
-	clusterSchematic.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-
-	someOtherMachineSchematic := omni.NewExtensionsConfiguration("aaa")
-	someOtherMachineSchematic.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-	someOtherMachineSchematic.Metadata().Labels().Set(omni.LabelClusterMachine, "bbb")
-
-	thisMachineSchematic := omni.NewExtensionsConfiguration("aaa")
-	thisMachineSchematic.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-	thisMachineSchematic.Metadata().Labels().Set(omni.LabelClusterMachine, "test")
-
-	someOtherMachineSet := omni.NewExtensionsConfiguration("aaa")
-	someOtherMachineSet.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-	someOtherMachineSet.Metadata().Labels().Set(omni.LabelMachineSet, "aaa")
-
-	thisMachineSet := omni.NewExtensionsConfiguration("aaa")
-	thisMachineSet.Metadata().Labels().Set(omni.LabelCluster, "cluster")
-	thisMachineSet.Metadata().Labels().Set(omni.LabelMachineSet, "machineSet")
-
-	extensions := []string{"zzzz"}
+	setup := func(_ context.Context, testContext testutils.TestContext) {
+		require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewMachineExtensionsController()))
+	}
 
 	for _, tt := range []struct {
-		name               string
-		extensions         *omni.ExtensionsConfiguration
-		machine            *omni.ClusterMachine
-		expectedExtensions []string
+		labels           map[string]string
+		machine          *omni.ClusterMachine
+		name             string
+		expectExtensions bool
 	}{
 		{
-			name:       "empty",
-			extensions: omni.NewExtensionsConfiguration("aaa"),
-			machine:    machine,
+			name: "defined for a cluster",
+			labels: map[string]string{
+				omni.LabelCluster: "cluster",
+			},
+			expectExtensions: true,
 		},
 		{
-			name:               "defined for a cluster",
-			extensions:         clusterSchematic,
-			machine:            machine,
-			expectedExtensions: extensions,
+			name: "defined for a different machine",
+			labels: map[string]string{
+				omni.LabelCluster:        "cluster",
+				omni.LabelClusterMachine: "bbb",
+			},
 		},
 		{
-			name:       "defined for a different machine",
-			extensions: someOtherMachineSchematic,
-			machine:    machine,
+			name: "defined for this machine",
+			labels: map[string]string{
+				omni.LabelCluster:        "cluster",
+				omni.LabelClusterMachine: "test",
+			},
+			expectExtensions: true,
 		},
 		{
-			name:               "defined for this machine",
-			extensions:         thisMachineSchematic,
-			machine:            machine,
-			expectedExtensions: extensions,
+			name: "defined for other machine set",
+			labels: map[string]string{
+				omni.LabelCluster:    "cluster",
+				omni.LabelMachineSet: "aaa",
+			},
 		},
 		{
-			name:       "defined for other machine set",
-			extensions: someOtherMachineSet,
-			machine:    machine,
-		},
-		{
-			name:               "defined for other this machine set",
-			extensions:         thisMachineSet,
-			machine:            machine,
-			expectedExtensions: extensions,
+			name: "defined for other this machine set",
+			labels: map[string]string{
+				omni.LabelCluster:    "cluster",
+				omni.LabelMachineSet: "machineSet",
+			},
+			expectExtensions: true,
 		},
 	} {
-		suite.T().Run(tt.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(suite.ctx, time.Second*3)
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			machine := omni.NewClusterMachine("test")
+			machine.Metadata().Labels().Set(omni.LabelCluster, "cluster")
+			machine.Metadata().Labels().Set(omni.LabelMachineSet, "machineSet")
+
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second*3)
 			defer cancel()
 
-			machineStatus := omni.NewMachineStatus(machine.Metadata().ID())
+			testutils.WithRuntime(ctx, t, testutils.TestOptions{}, setup, func(ctx context.Context, testContext testutils.TestContext) {
+				machineStatus := omni.NewMachineStatus(machine.Metadata().ID())
 
-			tt.extensions.TypedSpec().Value.Extensions = extensions
+				conf := omni.NewExtensionsConfiguration("aaa")
 
-			require := require.New(t)
-
-			require.NoError(suite.state.Create(ctx, machineStatus))
-			require.NoError(suite.state.Create(ctx, machine))
-			require.NoError(suite.state.Create(ctx, tt.extensions))
-
-			rtestutils.AssertResource[*omni.ExtensionsConfiguration](ctx, t, suite.state, tt.extensions.Metadata().ID(), func(r *omni.ExtensionsConfiguration, assertion *assert.Assertions) {
-				assertion.True(r.Metadata().Finalizers().Has(omnictrl.MachineExtensionsControllerName))
-			})
-
-			defer func() {
-				rtestutils.DestroyAll[*omni.MachineStatus](ctx, t, suite.state)
-				rtestutils.DestroyAll[*omni.ClusterMachine](ctx, t, suite.state)
-				rtestutils.DestroyAll[*omni.ExtensionsConfiguration](ctx, t, suite.state)
-			}()
-
-			if tt.expectedExtensions != nil {
-				rtestutils.AssertResources[*omni.MachineExtensions](ctx, t, suite.state, []string{machine.Metadata().ID()}, func(r *omni.MachineExtensions, assertion *assert.Assertions) {
-					assertion.Equal(tt.expectedExtensions, r.TypedSpec().Value.Extensions)
+				conf.Metadata().Labels().Do(func(tmp kvutils.TempKV) {
+					for key, value := range tt.labels {
+						tmp.Set(key, value)
+					}
 				})
-			} else {
-				rtestutils.AssertNoResource[*omni.MachineExtensions](ctx, t, suite.state, machine.Metadata().ID())
-			}
+
+				extensions := []string{"zzzz"}
+
+				conf.TypedSpec().Value.Extensions = extensions
+
+				require := require.New(t)
+
+				require.NoError(testContext.State.Create(ctx, machineStatus))
+				require.NoError(testContext.State.Create(ctx, machine))
+				require.NoError(testContext.State.Create(ctx, conf))
+
+				rtestutils.AssertResource(ctx, t, testContext.State, conf.Metadata().ID(), func(r *omni.ExtensionsConfiguration, assertion *assert.Assertions) {
+					assertion.True(r.Metadata().Finalizers().Has(omnictrl.MachineExtensionsControllerName))
+				})
+
+				if tt.expectExtensions {
+					rtestutils.AssertResources(ctx, t, testContext.State, []string{machine.Metadata().ID()}, func(r *omni.MachineExtensions, assertion *assert.Assertions) {
+						assertion.Equal(extensions, r.TypedSpec().Value.Extensions)
+					})
+				} else {
+					rtestutils.AssertNoResource[*omni.MachineExtensions](ctx, t, testContext.State, machine.Metadata().ID())
+				}
+			})
 		})
 	}
 }
 
-func TestMachineExtensionsSuite(t *testing.T) {
+func TestMachineExtensionsPriority(t *testing.T) {
 	t.Parallel()
 
-	suite.Run(t, new(MachineExtensionsSuite))
-}
-
-func TestMachineExtensionsPriority(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
@@ -183,7 +172,45 @@ func TestMachineExtensionsPriority(t *testing.T) {
 	})
 }
 
+func TestMachineExtensionsPriorityWithNotMatchingMachineSet(t *testing.T) {
+	t.Parallel()
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*10)
+	defer cancel()
+
+	testutils.WithRuntime(ctx, t, testutils.TestOptions{}, func(ctx context.Context, testContext testutils.TestContext) {
+		clusterLevelConfig := omni.NewExtensionsConfiguration("cluster-level")
+		clusterLevelConfig.Metadata().Labels().Set(omni.LabelCluster, "cluster")
+		clusterLevelConfig.TypedSpec().Value.Extensions = []string{"cluster-level"}
+
+		otherMachineSetLevelConfig := omni.NewExtensionsConfiguration("other-machine-set-level")
+		otherMachineSetLevelConfig.Metadata().Labels().Set(omni.LabelCluster, "cluster")
+		otherMachineSetLevelConfig.Metadata().Labels().Set(omni.LabelMachineSet, "other-machine-set")
+		otherMachineSetLevelConfig.TypedSpec().Value.Extensions = []string{"other-machine-set-level"}
+
+		st := testContext.State
+
+		require.NoError(t, st.Create(ctx, clusterLevelConfig))
+		require.NoError(t, st.Create(ctx, otherMachineSetLevelConfig))
+
+		clusterMachine := omni.NewClusterMachine("cluster-machine")
+		clusterMachine.Metadata().Labels().Set(omni.LabelCluster, "cluster")
+		clusterMachine.Metadata().Labels().Set(omni.LabelMachineSet, "machine-set")
+
+		require.NoError(t, st.Create(ctx, clusterMachine))
+
+		controller := omnictrl.NewMachineExtensionsController()
+		require.NoError(t, testContext.Runtime.RegisterQController(controller))
+	}, func(ctx context.Context, testContext testutils.TestContext) {
+		rtestutils.AssertResource(ctx, t, testContext.State, "cluster-machine", func(res *omni.MachineExtensions, assertion *assert.Assertions) {
+			assertion.Equal([]string{"cluster-level"}, res.TypedSpec().Value.Extensions)
+		})
+	})
+}
+
 func TestPreserveLegacyOrder(t *testing.T) {
+	t.Parallel()
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
