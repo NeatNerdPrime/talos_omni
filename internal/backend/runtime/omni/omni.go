@@ -255,7 +255,7 @@ func NewRuntime(cfg *config.Params, talosClientFactory *talos.ClientFactory, dns
 		omnictrl.NewJoinTokenStatusController(),
 		omnictrl.NewNodeUniqueTokenCleanupController(time.Minute),
 		clustermachine.NewConfigPatchesController(),
-		secrets.NewSecretRotationStatusController(&secrets.TalosRemoteGeneratorFactory{}, &secrets.KubernetesClientFactory{}),
+		secrets.NewSecretRotationStatusController(&secrets.KubernetesClientFactory{}),
 		machineupgrade.NewStatusController(imageFactoryHost, cfg.Registries.GetTalos(), nil),
 		kernelargsctrl.NewStatusController(),
 	}

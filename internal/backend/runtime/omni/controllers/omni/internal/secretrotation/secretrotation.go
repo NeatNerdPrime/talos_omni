@@ -161,7 +161,6 @@ func (c *Candidates) filter(filterFunc func(candidate Candidate) bool) []string 
 
 // Candidate is a candidate for rotation.
 type Candidate struct {
-	RemoteGeneratorFactory  RemoteGeneratorFactory
 	KubernetesClientFactory KubernetesClientFactory
 	MachineID               string
 	Hostname                string

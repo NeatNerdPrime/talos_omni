@@ -6,99 +6,17 @@
 package secrets_test
 
 import (
-	"bytes"
-	"context"
-	stdx509 "crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/cosi-project/runtime/pkg/safe"
-	"github.com/cosi-project/runtime/pkg/state"
-	"github.com/siderolabs/crypto/x509"
-	"github.com/siderolabs/gen/xslices"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni/internal/secretrotation"
-	"github.com/siderolabs/omni/internal/pkg/siderolink/trustd"
 )
-
-type fakeRemoteGeneratorFactory struct {
-	omniState state.State
-}
-
-type remoteGenerator struct {
-	omniState state.State
-}
-
-func (r remoteGenerator) IdentityContext(ctx context.Context, csr *x509.CertificateSigningRequest) (ca, crt []byte, err error) {
-	clusterMachine, err := safe.ReaderGetByID[*omni.ClusterMachine](ctx, r.omniState, csr.X509CertificateRequest.Subject.CommonName)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	clusterID, _ := clusterMachine.Metadata().Labels().Get(omni.LabelCluster)
-
-	clusterSecrets, err := safe.ReaderGetByID[*omni.ClusterSecrets](ctx, r.omniState, clusterID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	secretsBundle, err := omni.ToSecretsBundle(clusterSecrets.TypedSpec().Value.Data)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	issuingCA, acceptedCAs, err := trustd.GetIssuingAndAcceptedCAs(ctx, r.omniState, secretsBundle, clusterSecrets.Metadata().ID())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	csrPemBlock, _ := pem.Decode(csr.X509CertificateRequestPEM)
-	if csrPemBlock == nil {
-		return nil, nil, status.Errorf(codes.InvalidArgument, "failed to decode CSR")
-	}
-
-	x509Opts := []x509.Option{
-		x509.KeyUsage(stdx509.KeyUsageDigitalSignature),
-		x509.ExtKeyUsage([]stdx509.ExtKeyUsage{stdx509.ExtKeyUsageServerAuth}),
-	}
-
-	signed, err := x509.NewCertificateFromCSRBytes(
-		issuingCA.Crt,
-		issuingCA.Key,
-		csr.X509CertificateRequestPEM,
-		x509Opts...,
-	)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, "failed to sign CSR: %s", err)
-	}
-
-	return bytes.Join(
-		xslices.Map(
-			acceptedCAs,
-			func(cert *x509.PEMEncodedCertificate) []byte {
-				return cert.Crt
-			},
-		),
-		nil,
-	), signed.X509CertificatePEM, nil
-}
-
-func (r remoteGenerator) Close() error {
-	return nil
-}
-
-func (f *fakeRemoteGeneratorFactory) NewRemoteGenerator(string, []string, []*x509.PEMEncodedCertificate) (secretrotation.RemoteGenerator, error) {
-	return remoteGenerator{omniState: f.omniState}, nil
-}
 
 type fakeKubernetesClientFactory struct{}
 

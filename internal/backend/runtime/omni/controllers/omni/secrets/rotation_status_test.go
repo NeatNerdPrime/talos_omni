@@ -10,7 +10,6 @@ import (
 	stdx509 "crypto/x509"
 	"fmt"
 	"net"
-	"net/netip"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -60,7 +59,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -117,7 +115,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(secretsctrl.NewSecretsController(nil)))
@@ -126,28 +123,9 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
-				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				cps := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
 
-					return isCP
-				})
-
-				cpIDs := xslices.Map(cps, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
+				cluster, _ := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
 
 				rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 					assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -232,7 +210,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -240,28 +217,9 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
-				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				cps := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
 
-					return isCP
-				})
-
-				cpIDs := xslices.Map(cps, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
+				cluster, _ := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
 
 				rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 					assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -312,7 +270,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -320,28 +277,9 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
-				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				cps := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
 
-					return isCP
-				})
-
-				cpIDs := xslices.Map(cps, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
+				cluster, _ := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
 
 				rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 					assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -396,7 +334,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -404,34 +341,16 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
-				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				controlPlanes := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
 
-					return isCP
-				})
+				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
 				workers := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
 					_, isWorker := m.Metadata().Labels().Get(omni.LabelWorkerRole)
 
 					return isWorker
 				})
 
-				cpIDs := xslices.Map(controlPlanes, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
 				machineID := workers[0].Metadata().ID()
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
 
 				rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 					assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -483,7 +402,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -491,34 +409,16 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
-				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				controlPlanes := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
 
-					return isCP
-				})
+				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
 				workers := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
 					_, isWorker := m.Metadata().Labels().Get(omni.LabelWorkerRole)
 
 					return isWorker
 				})
 
-				cpIDs := xslices.Map(controlPlanes, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
 				machineID := workers[0].Metadata().ID()
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
 
 				rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 					assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -570,7 +470,6 @@ func Test_TalosCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -578,29 +477,10 @@ func Test_TalosCARotation(t *testing.T) {
 			},
 			func(ctx context.Context, testContext testutils.TestContext) {
 				machineServices := testutils.NewMachineServices(t, testContext.State)
+				syncOSRoot(ctx, t, testContext.State, machineServices)
+
 				cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "rotate-talos-ca", 3, 2)
-				cps := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-					_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
-
-					return isCP
-				})
-
-				cpIDs := xslices.Map(cps, func(m *omni.ClusterMachine) string {
-					return m.Metadata().ID()
-				})
 				machineID := machines[0].Metadata().ID()
-
-				machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-					if slices.Contains(cpIDs, m.ID()) {
-						certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-						certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-						certSAN.TypedSpec().DNSNames = []string{m.Address()}
-						certSAN.TypedSpec().FQDN = m.ID()
-
-						err := m.State.Create(ctx, certSAN)
-						require.NoError(t, err)
-					}
-				})
 
 				machineServices.Get(machineID).SetVersionHandler(
 					func(ctx context.Context, _ *emptypb.Empty) (*machine.VersionResponse, error) {
@@ -715,7 +595,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -772,7 +651,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(secretsctrl.NewSecretsController(nil)))
@@ -877,7 +755,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -947,7 +824,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1021,7 +897,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1099,7 +974,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1177,7 +1051,6 @@ func Test_KubernetesCARotation(t *testing.T) {
 			func(ctx context.Context, testContext testutils.TestContext) {
 				require.NoError(t, testContext.Runtime.RegisterQController(
 					secretsctrl.NewSecretRotationStatusController(
-						&fakeRemoteGeneratorFactory{testContext.State},
 						&fakeKubernetesClientFactory{},
 					)))
 				require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1237,7 +1110,6 @@ func Test_ConcurrentRotationRejection(t *testing.T) {
 		func(ctx context.Context, testContext testutils.TestContext) {
 			require.NoError(t, testContext.Runtime.RegisterQController(
 				secretsctrl.NewSecretRotationStatusController(
-					&fakeRemoteGeneratorFactory{testContext.State},
 					&fakeKubernetesClientFactory{},
 				)))
 			require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1245,28 +1117,9 @@ func Test_ConcurrentRotationRejection(t *testing.T) {
 		},
 		func(ctx context.Context, testContext testutils.TestContext) {
 			machineServices := testutils.NewMachineServices(t, testContext.State)
-			cluster, machines := createCluster(ctx, t, testContext.State, machineServices, "concurrent-rotation", 3, 2)
-			cps := xslices.Filter(machines, func(m *omni.ClusterMachine) bool {
-				_, isCP := m.Metadata().Labels().Get(omni.LabelControlPlaneRole)
+			syncOSRoot(ctx, t, testContext.State, machineServices)
 
-				return isCP
-			})
-
-			cpIDs := xslices.Map(cps, func(m *omni.ClusterMachine) string {
-				return m.Metadata().ID()
-			})
-
-			machineServices.ForEach(func(m *testutils.MachineServiceMock) {
-				if slices.Contains(cpIDs, m.ID()) {
-					certSAN := secrets.NewCertSAN(secrets.NamespaceName, secrets.CertSANAPIID)
-					certSAN.TypedSpec().IPs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
-					certSAN.TypedSpec().DNSNames = []string{m.Address()}
-					certSAN.TypedSpec().FQDN = m.ID()
-
-					err := m.State.Create(ctx, certSAN)
-					require.NoError(t, err)
-				}
-			})
+			cluster, _ := createCluster(ctx, t, testContext.State, machineServices, "concurrent-rotation", 3, 2)
 
 			rtestutils.AssertResource(ctx, t, testContext.State, cluster.Metadata().ID(), func(res *omni.ClusterSecretsRotationStatus, assertion *assert.Assertions) {
 				assertion.Equal(specs.SecretRotationSpec_OK, res.TypedSpec().Value.Phase)
@@ -1302,7 +1155,6 @@ func Test_ComponentIsolationDuringRotation(t *testing.T) {
 		func(ctx context.Context, testContext testutils.TestContext) {
 			require.NoError(t, testContext.Runtime.RegisterQController(
 				secretsctrl.NewSecretRotationStatusController(
-					&fakeRemoteGeneratorFactory{testContext.State},
 					&fakeKubernetesClientFactory{},
 				)))
 			require.NoError(t, testContext.Runtime.RegisterQController(omnictrl.NewClusterMachineConfigController("test.factory", nil, "ghcr.io/siderolabs/installer")))
@@ -1532,4 +1384,72 @@ url: tcp://[fdae:41e4:649b:9303::1]:8092`,
 	}
 
 	return cluster, machines
+}
+
+// syncOSRoot watches ClusterMachineSecrets and creates/updates OSRoot in mock machine states.
+// This simulates the Talos RootOSController that populates OSRoot from machine config.
+//
+//nolint:gocognit
+func syncOSRoot(ctx context.Context, t *testing.T, omniState state.State, machineServices *testutils.MachineServices) {
+	eventCh := make(chan safe.WrappedStateEvent[*omni.ClusterMachineSecrets])
+
+	require.NoError(t,
+		safe.StateWatchKind(
+			ctx,
+			omniState,
+			resource.NewMetadata(resources.DefaultNamespace, omni.ClusterMachineSecretsType, "", resource.VersionUndefined),
+			eventCh,
+		))
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case event := <-eventCh:
+				if event.Error() != nil {
+					continue
+				}
+
+				if event.Type() == state.Destroyed || event.Type() == state.Bootstrapped {
+					continue
+				}
+
+				res, err := event.Resource()
+				if err != nil {
+					continue
+				}
+
+				m := machineServices.Get(res.Metadata().ID())
+				if m == nil {
+					continue
+				}
+
+				secretsBundle, err := omni.ToSecretsBundle(res.TypedSpec().Value.GetData())
+				if err != nil {
+					continue
+				}
+
+				osRoot := secrets.NewOSRoot(secrets.OSRootID)
+				osRoot.TypedSpec().IssuingCA = secretsBundle.Certs.OS
+				osRoot.TypedSpec().AcceptedCAs = []*talosx509.PEMEncodedCertificate{
+					{Crt: secretsBundle.Certs.OS.Crt},
+				}
+
+				if res.TypedSpec().Value.GetRotation().GetExtraCerts().GetOs() != nil {
+					osRoot.TypedSpec().AcceptedCAs = append(osRoot.TypedSpec().AcceptedCAs,
+						&talosx509.PEMEncodedCertificate{Crt: res.TypedSpec().Value.Rotation.ExtraCerts.Os.Crt})
+				}
+
+				if err = safe.StateModify(ctx, m.State, osRoot, func(r *secrets.OSRoot) error {
+					r.TypedSpec().IssuingCA = osRoot.TypedSpec().IssuingCA
+					r.TypedSpec().AcceptedCAs = osRoot.TypedSpec().AcceptedCAs
+
+					return nil
+				}); err != nil {
+					t.Logf("failed to update OSRoot for machine %s: %v", res.Metadata().ID(), err)
+				}
+			}
+		}
+	}()
 }

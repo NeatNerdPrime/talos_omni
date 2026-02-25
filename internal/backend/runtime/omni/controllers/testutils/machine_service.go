@@ -48,26 +48,44 @@ func NewMachineServices(t *testing.T, st state.State) *MachineServices {
 
 // MachineServices keeps the individual machine services.
 type MachineServices struct {
-	items map[string]*MachineServiceMock
 	st    state.State
+	items map[string]*MachineServiceMock
 	t     *testing.T
+	mu    sync.RWMutex
 }
 
 // Get returns the machine service mock.
 func (ms *MachineServices) Get(id string) *MachineServiceMock {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
 	return ms.items[id]
 }
 
 // Create the machine service with id.
 func (ms *MachineServices) Create(ctx context.Context, id string) *MachineServiceMock {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
 	ms.items[id] = NewMachineServiceMock(ctx, ms.t, id, ms.st)
 
 	return ms.items[id]
 }
 
 // ForEach iterates through the services and calls the function for each.
+// It snapshots the current services under the read lock and releases it before
+// invoking the callback, to avoid deadlocks if the callback re-enters MachineServices.
 func (ms *MachineServices) ForEach(cb func(m *MachineServiceMock)) {
+	ms.mu.RLock()
+
+	services := make([]*MachineServiceMock, 0, len(ms.items))
 	for _, m := range ms.items {
+		services = append(services, m)
+	}
+
+	ms.mu.RUnlock()
+
+	for _, m := range services {
 		cb(m)
 	}
 }

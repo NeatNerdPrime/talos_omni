@@ -67,7 +67,7 @@ func (c Candidate) validateTalosCARotation(ctx context.Context, status *omni.Clu
 	}
 
 	if c.ControlPlane {
-		return c.checkTrustdGeneratedCerts(ctx, talosClient, status, cmSecrets)
+		return c.checkOSRoot(ctx, talosClient, cmSecrets)
 	}
 
 	return true, nil
@@ -229,84 +229,50 @@ func (c Candidate) talosAPIClientCertificateFromSecrets(secrets *omni.ClusterMac
 	return nil, nil, fmt.Errorf("unknown rotation phase: %s", secrets.TypedSpec().Value.Rotation.Phase)
 }
 
-func (c Candidate) getTrustdClient(status *omni.ClusterMachineStatus, secrets *omni.ClusterMachineSecrets) (RemoteGenerator, []*talosx509.PEMEncodedCertificate, error) {
-	endpoint := status.TypedSpec().Value.ManagementAddress
-
-	secretsBundle, err := omni.ToSecretsBundle(secrets.TypedSpec().Value.GetData())
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to parse secrets bundle: %w", err)
-	}
-
-	acceptedCAs := []*talosx509.PEMEncodedCertificate{{Crt: secretsBundle.Certs.OS.Crt}}
-
-	if secrets.TypedSpec().Value.Rotation.ExtraCerts.GetOs() != nil {
-		acceptedCAs = append(acceptedCAs, &talosx509.PEMEncodedCertificate{Crt: secrets.TypedSpec().Value.Rotation.ExtraCerts.GetOs().Crt})
-	}
-
-	remoteGen, err := c.RemoteGeneratorFactory.NewRemoteGenerator(secretsBundle.TrustdInfo.Token, []string{endpoint}, acceptedCAs)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed creating trustd client: %w", err)
-	}
-
-	return remoteGen, acceptedCAs, nil
-}
-
-func (c Candidate) checkTrustdGeneratedCerts(ctx context.Context, talosClient *client.Client, status *omni.ClusterMachineStatus, cmSecrets *omni.ClusterMachineSecrets) (bool, error) {
-	trustdClient, acceptedCAs, err := c.getTrustdClient(status, cmSecrets)
-	if err != nil {
-		return false, err
-	}
-	defer trustdClient.Close() //nolint:errcheck
-
-	certSAN, err := safe.ReaderGetByID[*secrets.CertSAN](ctx, talosClient.COSI, secrets.CertSANAPIID)
+func (c Candidate) checkOSRoot(ctx context.Context, talosClient *client.Client, cmSecrets *omni.ClusterMachineSecrets) (bool, error) {
+	osRoot, err := safe.ReaderGetByID[*secrets.OSRoot](ctx, talosClient.COSI, secrets.OSRootID)
 	if err != nil {
 		if state.IsNotFoundError(err) {
-			return false, fmt.Errorf("certSAN resource not found: %w", err)
+			return false, fmt.Errorf("OSRoot resource not found: %w", err)
 		}
 
-		return false, fmt.Errorf("error getting certSANs: %w", err)
+		return false, fmt.Errorf("error getting OSRoot: %w", err)
 	}
 
-	certSANs := certSAN.TypedSpec()
-
-	acceptedCA, err := acceptedCAs[len(acceptedCAs)-1].GetCert()
+	secretsBundle, err := omni.ToSecretsBundle(cmSecrets.TypedSpec().Value.GetData())
 	if err != nil {
-		return false, fmt.Errorf("failed to parse CA certificate: %w", err)
+		return false, fmt.Errorf("failed to parse ClusterMachineSecrets: %w", err)
 	}
 
-	serverCSR, serverCert, err := talosx509.NewCSRAndIdentityFromCA(
-		acceptedCA,
-		talosx509.IPAddresses(certSANs.StdIPs()),
-		talosx509.DNSNames(certSANs.DNSNames),
-		talosx509.CommonName(certSANs.FQDN),
-	)
-	if err != nil {
-		return false, fmt.Errorf("failed to generate API server CSR: %w", err)
+	// Verify IssuingCA matches the main CA from secrets bundle.
+	// Mismatches are expected during rotation convergence, so return (false, nil) rather than an error.
+	if osRoot.TypedSpec().IssuingCA == nil || !bytes.Equal(osRoot.TypedSpec().IssuingCA.Crt, secretsBundle.Certs.OS.Crt) {
+		return false, nil
 	}
 
-	var serverCA []byte
-
-	serverCA, serverCert.Crt, err = trustdClient.IdentityContext(ctx, serverCSR)
-	if err != nil {
-		return false, err
+	// Verify AcceptedCAs contains all expected certs
+	expectedCerts := [][]byte{secretsBundle.Certs.OS.Crt}
+	if cmSecrets.TypedSpec().Value.GetRotation() != nil && cmSecrets.TypedSpec().Value.Rotation.ExtraCerts.GetOs() != nil {
+		expectedCerts = append(expectedCerts, cmSecrets.TypedSpec().Value.Rotation.ExtraCerts.Os.Crt)
 	}
 
-	clientCA, clientCert, err := c.talosAPIClientCertificateFromSecrets(cmSecrets, constants.CertificateValidityTime, role.MakeSet(role.Admin))
-	if err != nil {
-		return false, err
-	}
-
-	verifyErr := c.verifyCert(serverCert.Crt, clientCA, x509.ExtKeyUsageServerAuth)
-	if verifyErr != nil {
-		return false, fmt.Errorf("trustd: failed to verify server cert: %w", verifyErr)
-	}
-
-	verifyErr = c.verifyCert(clientCert.Crt, serverCA, x509.ExtKeyUsageClientAuth)
-	if verifyErr != nil {
-		return false, fmt.Errorf("trustd: failed to verify client cert: %w", verifyErr)
+	for _, expected := range expectedCerts {
+		if !containsCert(osRoot.TypedSpec().AcceptedCAs, expected) {
+			return false, nil
+		}
 	}
 
 	return true, nil
+}
+
+func containsCert(cas []*talosx509.PEMEncodedCertificate, cert []byte) bool {
+	for _, ca := range cas {
+		if bytes.Equal(ca.Crt, cert) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c Candidate) checkKubeletApiserverClientCert(ctx context.Context, talosClient *client.Client, secrets *omni.ClusterMachineSecrets) error {

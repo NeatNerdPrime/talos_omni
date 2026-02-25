@@ -83,7 +83,6 @@ require (
 	github.com/siderolabs/omni/client v1.5.2
 	github.com/siderolabs/proto-codec v0.1.3
 	github.com/siderolabs/siderolink v0.3.15
-	github.com/siderolabs/talos v1.13.0-alpha.1.0.20260210134859-406b8c83c9b3
 	github.com/siderolabs/talos/pkg/machinery v1.13.0-alpha.1.0.20260219211519-9758bd4fe0e2
 	github.com/siderolabs/tcpproxy v0.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.4
@@ -192,6 +191,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
+	github.com/golang/mock v1.7.0-rc.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.27.0 // indirect

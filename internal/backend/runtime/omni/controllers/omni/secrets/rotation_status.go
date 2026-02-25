@@ -21,7 +21,6 @@ import (
 	"github.com/siderolabs/crypto/x509"
 	"github.com/siderolabs/gen/xerrors"
 	"github.com/siderolabs/gen/xslices"
-	"github.com/siderolabs/talos/pkg/grpc/gen"
 	"github.com/siderolabs/talos/pkg/machinery/config"
 	talossecrets "github.com/siderolabs/talos/pkg/machinery/config/generate/secrets"
 	"go.uber.org/zap"
@@ -45,18 +44,6 @@ const RotationPaused = "rotation paused"
 // BackedUpRotatedSecretsLimit is the maximum number of backed-up rotated secrets to keep.
 const BackedUpRotatedSecretsLimit = 5
 
-// TalosRemoteGeneratorFactory is the factory for providing a client for accessing trustd.
-type TalosRemoteGeneratorFactory struct{}
-
-func (f *TalosRemoteGeneratorFactory) NewRemoteGenerator(token string, endpoints []string, acceptedCAs []*x509.PEMEncodedCertificate) (secretrotation.RemoteGenerator, error) {
-	remoteGenerator, err := gen.NewRemoteGenerator(token, endpoints, acceptedCAs)
-	if err != nil {
-		return nil, err
-	}
-
-	return remoteGenerator, err
-}
-
 type KubernetesClientFactory struct{}
 
 func (f *KubernetesClientFactory) NewClient(config *rest.Config) (secretrotation.KubernetesClient, error) {
@@ -70,17 +57,15 @@ func (f *KubernetesClientFactory) NewClient(config *rest.Config) (secretrotation
 
 // NewSecretRotationStatusController instantiates the secret rotation status controller.
 func NewSecretRotationStatusController(
-	remoteGenFactory secretrotation.RemoteGeneratorFactory,
 	kubernetesClientFactory secretrotation.KubernetesClientFactory,
 ) *sequence.Controller[*omni.ClusterSecrets, *omni.ClusterSecretsRotationStatus] {
 	return sequence.NewController[*omni.ClusterSecrets, *omni.ClusterSecretsRotationStatus](
 		RotationStatusControllerName,
-		&Rotator{RemoteGeneratorFactory: remoteGenFactory, KubernetesClientFactory: kubernetesClientFactory},
+		&Rotator{KubernetesClientFactory: kubernetesClientFactory},
 	)
 }
 
 type Rotator struct {
-	RemoteGeneratorFactory  secretrotation.RemoteGeneratorFactory
 	KubernetesClientFactory secretrotation.KubernetesClientFactory
 }
 
@@ -764,7 +749,6 @@ func (s *Rotator) processMachine(
 		ControlPlane:            isControlPlane,
 		Locked:                  locked,
 		Ready:                   cmStatus.TypedSpec().Value.Ready,
-		RemoteGeneratorFactory:  s.RemoteGeneratorFactory,
 		KubernetesClientFactory: s.KubernetesClientFactory,
 	}
 
