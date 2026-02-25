@@ -7,12 +7,7 @@ included in the LICENSE file.
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 
-import { Runtime } from '@/api/common/omni.pb'
-import { Code } from '@/api/google/rpc/code.pb'
-import { ResourceService } from '@/api/grpc'
 import { ManagementService } from '@/api/omni/management/management.pb'
-import { withRuntime } from '@/api/options'
-import { DefaultNamespace, IdentityType, UserType } from '@/api/resources'
 import TButton from '@/components/common/Button/TButton.vue'
 import { showError, showSuccess } from '@/notification'
 import CloseButton from '@/views/omni/Modals/CloseButton.vue'
@@ -36,8 +31,6 @@ const close = () => {
 }
 
 const destroy = async () => {
-  let destroyed = true
-
   if (route.query.serviceAccount) {
     const parts = (id as string).split('@')
     let name = parts[0]
@@ -63,47 +56,19 @@ const destroy = async () => {
     return
   }
 
-  if (route.query.user) {
-    try {
-      await ResourceService.Delete(
-        {
-          namespace: DefaultNamespace,
-          type: UserType,
-          id: route.query.user as string,
-        },
-        withRuntime(Runtime.Omni),
-      )
-    } catch (e) {
-      if (e.code !== Code.NOT_FOUND) {
-        showError('Failed to Remove the User', e.message)
+  try {
+    await ManagementService.DestroyUser({
+      email: route.query.identity as string,
+    })
+  } catch (e) {
+    showError('Failed to Delete the User', e.message)
 
-        destroyed = false
-      }
-    }
-  }
-
-  if (route.query.identity) {
-    try {
-      await ResourceService.Delete(
-        {
-          namespace: DefaultNamespace,
-          type: IdentityType,
-          id: route.query.identity as string,
-        },
-        withRuntime(Runtime.Omni),
-      )
-    } catch (e) {
-      if (e.code !== Code.NOT_FOUND) {
-        showError('Failed to Remove the Identity', e.message)
-
-        destroyed = false
-      }
-    }
+    return
   }
 
   close()
 
-  if (destroyed) showSuccess(`The User ${route.query.identity} was Destroyed`)
+  showSuccess(`The User ${route.query.identity} was Destroyed`)
 }
 </script>
 

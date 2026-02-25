@@ -9,13 +9,13 @@ import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { ManagementService } from '@/api/omni/management/management.pb'
 import { RoleAdmin, RoleNone, RoleOperator, RoleReader } from '@/api/resources'
 import TButton from '@/components/common/Button/TButton.vue'
 import TSelectList from '@/components/common/SelectList/TSelectList.vue'
 import TInput from '@/components/common/TInput/TInput.vue'
 import { AuthType, authType } from '@/methods'
 import { canManageUsers } from '@/methods/auth'
-import { createUser } from '@/methods/user'
 import { showError, showSuccess } from '@/notification'
 import CloseButton from '@/views/omni/Modals/CloseButton.vue'
 
@@ -34,7 +34,7 @@ const handleUserCreate = async () => {
   }
 
   try {
-    await createUser(identity.value, role.value)
+    await ManagementService.CreateUser({ email: identity.value, role: role.value })
   } catch (e) {
     showError('Failed to Create User', e.message)
 

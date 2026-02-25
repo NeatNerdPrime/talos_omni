@@ -97,7 +97,7 @@ var (
 // authorizationValidationOptions returns the validation options responsible for all authorization checks.
 //
 // These include the regular checks on the user's Omni-wide role, as well as the ACLs that can authorize the user to perform additional actions on specific clusters.
-func authorizationValidationOptions(st state.State, samlEnabled bool) []validated.StateOption {
+func authorizationValidationOptions(st state.State) []validated.StateOption {
 	return []validated.StateOption{
 		validated.WithListValidations(
 			func(ctx context.Context, kind resource.Kind, opt ...state.ListOption) error {
@@ -108,11 +108,11 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 				}
 
 				if len(opts.LabelQueries) == 0 {
-					return checkForKindAccess(ctx, st, state.List, kind, nil, samlEnabled)
+					return checkForKindAccess(ctx, st, state.List, kind, nil)
 				}
 
 				for _, query := range opts.LabelQueries {
-					if err := checkForKindAccess(ctx, st, state.List, kind, query.Terms, samlEnabled); err != nil {
+					if err := checkForKindAccess(ctx, st, state.List, kind, query.Terms); err != nil {
 						return err
 					}
 				}
@@ -129,11 +129,11 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 				}
 
 				if len(opts.LabelQueries) == 0 {
-					return checkForKindAccess(ctx, st, state.Watch, kind, nil, samlEnabled)
+					return checkForKindAccess(ctx, st, state.Watch, kind, nil)
 				}
 
 				for _, query := range opts.LabelQueries {
-					if err := checkForKindAccess(ctx, st, state.Watch, kind, query.Terms, samlEnabled); err != nil {
+					if err := checkForKindAccess(ctx, st, state.Watch, kind, query.Terms); err != nil {
 						return err
 					}
 				}
@@ -152,7 +152,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 						ResourceType:      ptr.Type(),
 						ResourceID:        ptr.ID(),
 						Verb:              state.Get,
-					}, clusterID, false, samlEnabled)
+					}, clusterID, false)
 				}
 
 				clusterID := clusterIDFromMetadata(res.Metadata())
@@ -162,7 +162,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      res.Metadata().Type(),
 					ResourceID:        res.Metadata().ID(),
 					Verb:              state.Get,
-				}, clusterID, false, samlEnabled)
+				}, clusterID, false)
 			},
 		),
 		validated.WithWatchValidations(
@@ -177,7 +177,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      ptr.Type(),
 					ResourceID:        ptr.ID(),
 					Verb:              state.Watch,
-				}, clusterID, false, samlEnabled)
+				}, clusterID, false)
 			},
 		),
 		validated.WithCreateValidations(
@@ -189,7 +189,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      res.Metadata().Type(),
 					ResourceID:        res.Metadata().ID(),
 					Verb:              state.Create,
-				}, clusterID, false, samlEnabled)
+				}, clusterID, false)
 			},
 		),
 		validated.WithUpdateValidations(
@@ -203,7 +203,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 						ResourceType:      newRes.Metadata().Type(),
 						ResourceID:        newRes.Metadata().ID(),
 						Verb:              state.Update,
-					}, newClusterID, false, samlEnabled)
+					}, newClusterID, false)
 				}
 
 				existingClusterID := clusterIDFromMetadata(existingRes.Metadata())
@@ -213,7 +213,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      existingRes.Metadata().Type(),
 					ResourceID:        existingRes.Metadata().ID(),
 					Verb:              state.Update,
-				}, existingClusterID, false, samlEnabled); err != nil {
+				}, existingClusterID, false); err != nil {
 					return err
 				}
 
@@ -229,7 +229,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      newRes.Metadata().Type(),
 					ResourceID:        newRes.Metadata().ID(),
 					Verb:              state.Update,
-				}, newClusterID, false, samlEnabled)
+				}, newClusterID, false)
 			},
 		),
 		validated.WithDestroyValidations(
@@ -243,7 +243,7 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 						ResourceType:      ptr.Type(),
 						ResourceID:        ptr.ID(),
 						Verb:              state.Destroy,
-					}, clusterID, false, samlEnabled)
+					}, clusterID, false)
 				}
 
 				clusterID := clusterIDFromMetadata(res.Metadata())
@@ -253,13 +253,13 @@ func authorizationValidationOptions(st state.State, samlEnabled bool) []validate
 					ResourceType:      res.Metadata().Type(),
 					ResourceID:        res.Metadata().ID(),
 					Verb:              state.Destroy,
-				}, clusterID, false, samlEnabled)
+				}, clusterID, false)
 			},
 		),
 	}
 }
 
-func checkForRole(ctx context.Context, st state.State, access state.Access, clusterID resource.ID, requireAll, samlEnabled bool) error {
+func checkForRole(ctx context.Context, st state.State, access state.Access, clusterID resource.ID, requireAll bool) error {
 	if actor.ContextIsInternalActor(ctx) {
 		return nil
 	}
@@ -280,10 +280,10 @@ func checkForRole(ctx context.Context, st state.State, access state.Access, clus
 		}
 	}
 
-	return filterAccess(ctx, access, samlEnabled)
+	return filterAccess(ctx, access)
 }
 
-func checkForKindAccess(ctx context.Context, st state.State, verb state.Verb, kind resource.Kind, labelTerms []resource.LabelTerm, samlEnabled bool) error {
+func checkForKindAccess(ctx context.Context, st state.State, verb state.Verb, kind resource.Kind, labelTerms []resource.LabelTerm) error {
 	clusterID := ""
 	requireAll := false
 
@@ -297,7 +297,7 @@ func checkForKindAccess(ctx context.Context, st state.State, verb state.Verb, ki
 		ResourceNamespace: kind.Namespace(),
 		ResourceType:      kind.Type(),
 		Verb:              verb,
-	}, clusterID, requireAll, samlEnabled)
+	}, clusterID, requireAll)
 }
 
 func isClusterRelatedType(typ resource.Type) bool {
@@ -357,7 +357,7 @@ func verbToRole(verb state.Verb) role.Role {
 // filterAccess provides a filter to exclude some resources and operations from external sources.
 //
 //nolint:cyclop,gocyclo
-func filterAccess(ctx context.Context, access state.Access, samlEnabled bool) error {
+func filterAccess(ctx context.Context, access state.Access) error {
 	if actor.ContextIsInternalActor(ctx) {
 		return nil
 	}
@@ -487,21 +487,15 @@ func filterAccess(ctx context.Context, access state.Access, samlEnabled bool) er
 		omni.EtcdBackupS3ConfType,
 		infra.ProviderType,
 		omni.InfraMachineBMCConfigType:
-		var checkResult auth.CheckResult
-		// user management access
-		checkResult, err = auth.CheckGRPC(ctx, auth.WithRole(role.Admin))
+		_, err = auth.CheckGRPC(ctx, auth.WithRole(role.Admin))
+
 		if err == nil && access.Verb == state.Create && access.ResourceType == siderolink.JoinTokenType {
 			err = status.Error(codes.PermissionDenied, "only read, update and destroy access is permitted, create should be done via the management.CreateJoinToken API call")
 		}
 
-		if err == nil && (access.Verb == state.Destroy || access.Verb == state.Update) {
-			if access.ResourceType == authres.IdentityType && checkResult.Identity == access.ResourceID {
-				err = status.Errorf(codes.PermissionDenied, "destroying/updating resource %s is not allowed by the current user", access.ResourceID)
-			}
-
-			if access.ResourceType == authres.UserType && checkResult.UserID == access.ResourceID {
-				err = status.Errorf(codes.PermissionDenied, "destroying/updating resource %s is not allowed by the current user", access.ResourceID)
-			}
+		// Restrict direct mutations on Identity and User resources — these must go through ManagementService gRPC endpoints.
+		if err == nil && !access.Verb.Readonly() && (access.ResourceType == authres.IdentityType || access.ResourceType == authres.UserType) {
+			err = status.Errorf(codes.PermissionDenied, "only read access is permitted on resource %v, mutations should be done via ManagementService API calls", access.ResourceType)
 		}
 	case authres.AuthConfigType:
 		// allow access even without auth
@@ -511,25 +505,6 @@ func filterAccess(ctx context.Context, access state.Access, samlEnabled bool) er
 
 	if err != nil {
 		return err
-	}
-
-	if samlEnabled {
-		switch access.ResourceType {
-		case authres.UserType:
-			// If SAML is enabled only enable read, update and destroy on User resources.
-			if access.Verb.Readonly() || access.Verb == state.Update || access.Verb == state.Destroy {
-				return nil
-			}
-
-			return status.Error(codes.PermissionDenied, "only read and destroy access is permitted")
-		case authres.IdentityType:
-			// If SAML is enabled only enable read, update and destroy on Identity resources.
-			if access.Verb.Readonly() || access.Verb == state.Update || access.Verb == state.Destroy {
-				return nil
-			}
-
-			return status.Error(codes.PermissionDenied, "only read and destroy access is permitted")
-		}
 	}
 
 	// authorization checks by access type

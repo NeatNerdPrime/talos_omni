@@ -1956,6 +1956,242 @@ func (*ResetNodeUniqueTokenResponse) Descriptor() ([]byte, []int) {
 	return file_omni_management_management_proto_rawDescGZIP(), []int{33}
 }
 
+type CreateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUserRequest) Reset() {
+	*x = CreateUserRequest{}
+	mi := &file_omni_management_management_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserRequest) ProtoMessage() {}
+
+func (x *CreateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserRequest.ProtoReflect.Descriptor instead.
+func (*CreateUserRequest) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *CreateUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *CreateUserRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type CreateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateUserResponse) Reset() {
+	*x = CreateUserResponse{}
+	mi := &file_omni_management_management_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateUserResponse) ProtoMessage() {}
+
+func (x *CreateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateUserResponse.ProtoReflect.Descriptor instead.
+func (*CreateUserResponse) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *CreateUserResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UpdateUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	Role          string                 `protobuf:"bytes,2,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserRequest) Reset() {
+	*x = UpdateUserRequest{}
+	mi := &file_omni_management_management_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserRequest) ProtoMessage() {}
+
+func (x *UpdateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserRequest) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *UpdateUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *UpdateUserRequest) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+type DestroyUserRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Email         string                 `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DestroyUserRequest) Reset() {
+	*x = DestroyUserRequest{}
+	mi := &file_omni_management_management_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DestroyUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DestroyUserRequest) ProtoMessage() {}
+
+func (x *DestroyUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DestroyUserRequest.ProtoReflect.Descriptor instead.
+func (*DestroyUserRequest) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *DestroyUserRequest) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+type ListUsersResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Users         []*ListUsersResponse_User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUsersResponse) Reset() {
+	*x = ListUsersResponse{}
+	mi := &file_omni_management_management_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUsersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUsersResponse) ProtoMessage() {}
+
+func (x *ListUsersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUsersResponse.ProtoReflect.Descriptor instead.
+func (*ListUsersResponse) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *ListUsersResponse) GetUsers() []*ListUsersResponse_User {
+	if x != nil {
+		return x.Users
+	}
+	return nil
+}
+
 type ListServiceAccountsResponse_ServiceAccount struct {
 	state         protoimpl.MessageState                                     `protogen:"open.v1"`
 	Name          string                                                     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -1967,7 +2203,7 @@ type ListServiceAccountsResponse_ServiceAccount struct {
 
 func (x *ListServiceAccountsResponse_ServiceAccount) Reset() {
 	*x = ListServiceAccountsResponse_ServiceAccount{}
-	mi := &file_omni_management_management_proto_msgTypes[34]
+	mi := &file_omni_management_management_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1979,7 +2215,7 @@ func (x *ListServiceAccountsResponse_ServiceAccount) String() string {
 func (*ListServiceAccountsResponse_ServiceAccount) ProtoMessage() {}
 
 func (x *ListServiceAccountsResponse_ServiceAccount) ProtoReflect() protoreflect.Message {
-	mi := &file_omni_management_management_proto_msgTypes[34]
+	mi := &file_omni_management_management_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2027,7 +2263,7 @@ type ListServiceAccountsResponse_ServiceAccount_PgpPublicKey struct {
 
 func (x *ListServiceAccountsResponse_ServiceAccount_PgpPublicKey) Reset() {
 	*x = ListServiceAccountsResponse_ServiceAccount_PgpPublicKey{}
-	mi := &file_omni_management_management_proto_msgTypes[35]
+	mi := &file_omni_management_management_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2039,7 +2275,7 @@ func (x *ListServiceAccountsResponse_ServiceAccount_PgpPublicKey) String() strin
 func (*ListServiceAccountsResponse_ServiceAccount_PgpPublicKey) ProtoMessage() {}
 
 func (x *ListServiceAccountsResponse_ServiceAccount_PgpPublicKey) ProtoReflect() protoreflect.Message {
-	mi := &file_omni_management_management_proto_msgTypes[35]
+	mi := &file_omni_management_management_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2087,7 +2323,7 @@ type CreateSchematicRequest_Overlay struct {
 
 func (x *CreateSchematicRequest_Overlay) Reset() {
 	*x = CreateSchematicRequest_Overlay{}
-	mi := &file_omni_management_management_proto_msgTypes[36]
+	mi := &file_omni_management_management_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2099,7 +2335,7 @@ func (x *CreateSchematicRequest_Overlay) String() string {
 func (*CreateSchematicRequest_Overlay) ProtoMessage() {}
 
 func (x *CreateSchematicRequest_Overlay) ProtoReflect() protoreflect.Message {
-	mi := &file_omni_management_management_proto_msgTypes[36]
+	mi := &file_omni_management_management_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2149,7 +2385,7 @@ type GetSupportBundleResponse_Progress struct {
 
 func (x *GetSupportBundleResponse_Progress) Reset() {
 	*x = GetSupportBundleResponse_Progress{}
-	mi := &file_omni_management_management_proto_msgTypes[38]
+	mi := &file_omni_management_management_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2161,7 +2397,7 @@ func (x *GetSupportBundleResponse_Progress) String() string {
 func (*GetSupportBundleResponse_Progress) ProtoMessage() {}
 
 func (x *GetSupportBundleResponse_Progress) ProtoReflect() protoreflect.Message {
-	mi := &file_omni_management_management_proto_msgTypes[38]
+	mi := &file_omni_management_management_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2224,7 +2460,7 @@ type ValidateJsonSchemaResponse_Error struct {
 
 func (x *ValidateJsonSchemaResponse_Error) Reset() {
 	*x = ValidateJsonSchemaResponse_Error{}
-	mi := &file_omni_management_management_proto_msgTypes[39]
+	mi := &file_omni_management_management_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2236,7 +2472,7 @@ func (x *ValidateJsonSchemaResponse_Error) String() string {
 func (*ValidateJsonSchemaResponse_Error) ProtoMessage() {}
 
 func (x *ValidateJsonSchemaResponse_Error) ProtoReflect() protoreflect.Message {
-	mi := &file_omni_management_management_proto_msgTypes[39]
+	mi := &file_omni_management_management_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2278,6 +2514,74 @@ func (x *ValidateJsonSchemaResponse_Error) GetCause() string {
 		return x.Cause
 	}
 	return ""
+}
+
+type ListUsersResponse_User struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	SamlLabels    map[string]string      `protobuf:"bytes,4,rep,name=saml_labels,json=samlLabels,proto3" json:"saml_labels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUsersResponse_User) Reset() {
+	*x = ListUsersResponse_User{}
+	mi := &file_omni_management_management_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUsersResponse_User) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUsersResponse_User) ProtoMessage() {}
+
+func (x *ListUsersResponse_User) ProtoReflect() protoreflect.Message {
+	mi := &file_omni_management_management_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUsersResponse_User.ProtoReflect.Descriptor instead.
+func (*ListUsersResponse_User) Descriptor() ([]byte, []int) {
+	return file_omni_management_management_proto_rawDescGZIP(), []int{38, 0}
+}
+
+func (x *ListUsersResponse_User) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ListUsersResponse_User) GetEmail() string {
+	if x != nil {
+		return x.Email
+	}
+	return ""
+}
+
+func (x *ListUsersResponse_User) GetRole() string {
+	if x != nil {
+		return x.Role
+	}
+	return ""
+}
+
+func (x *ListUsersResponse_User) GetSamlLabels() map[string]string {
+	if x != nil {
+		return x.SamlLabels
+	}
+	return nil
 }
 
 var File_omni_management_management_proto protoreflect.FileDescriptor
@@ -2447,12 +2751,33 @@ const file_omni_management_management_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"-\n" +
 	"\x1bResetNodeUniqueTokenRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\x1e\n" +
-	"\x1cResetNodeUniqueTokenResponse*O\n" +
+	"\x1cResetNodeUniqueTokenResponse\"=\n" +
+	"\x11CreateUserRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\"-\n" +
+	"\x12CreateUserResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"=\n" +
+	"\x11UpdateUserRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
+	"\x04role\x18\x02 \x01(\tR\x04role\"*\n" +
+	"\x12DestroyUserRequest\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\"\xa4\x02\n" +
+	"\x11ListUsersResponse\x128\n" +
+	"\x05users\x18\x01 \x03(\v2\".management.ListUsersResponse.UserR\x05users\x1a\xd4\x01\n" +
+	"\x04User\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
+	"\x04role\x18\x03 \x01(\tR\x04role\x12S\n" +
+	"\vsaml_labels\x18\x04 \x03(\v22.management.ListUsersResponse.User.SamlLabelsEntryR\n" +
+	"samlLabels\x1a=\n" +
+	"\x0fSamlLabelsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*O\n" +
 	"\x13SchematicBootloader\x12\r\n" +
 	"\tBOOT_AUTO\x10\x00\x12\r\n" +
 	"\tBOOT_DUAL\x10\x01\x12\v\n" +
 	"\aBOOT_SD\x10\x02\x12\r\n" +
-	"\tBOOT_GRUB\x10\x032\x87\x0e\n" +
+	"\tBOOT_GRUB\x10\x032\xa4\x10\n" +
 	"\x11ManagementService\x12K\n" +
 	"\n" +
 	"Kubeconfig\x12\x1d.management.KubeconfigRequest\x1a\x1e.management.KubeconfigResponse\x12N\n" +
@@ -2474,7 +2799,13 @@ const file_omni_management_management_proto_rawDesc = "" +
 	"\x12MaintenanceUpgrade\x12%.management.MaintenanceUpgradeRequest\x1a&.management.MaintenanceUpgradeResponse\x12i\n" +
 	"\x14GetMachineJoinConfig\x12'.management.GetMachineJoinConfigRequest\x1a(.management.GetMachineJoinConfigResponse\x12Z\n" +
 	"\x0fCreateJoinToken\x12\".management.CreateJoinTokenRequest\x1a#.management.CreateJoinTokenResponse\x12i\n" +
-	"\x14ResetNodeUniqueToken\x12'.management.ResetNodeUniqueTokenRequest\x1a(.management.ResetNodeUniqueTokenResponseB7Z5github.com/siderolabs/omni/client/api/omni/managementb\x06proto3"
+	"\x14ResetNodeUniqueToken\x12'.management.ResetNodeUniqueTokenRequest\x1a(.management.ResetNodeUniqueTokenResponse\x12K\n" +
+	"\n" +
+	"CreateUser\x12\x1d.management.CreateUserRequest\x1a\x1e.management.CreateUserResponse\x12B\n" +
+	"\tListUsers\x12\x16.google.protobuf.Empty\x1a\x1d.management.ListUsersResponse\x12C\n" +
+	"\n" +
+	"UpdateUser\x12\x1d.management.UpdateUserRequest\x1a\x16.google.protobuf.Empty\x12E\n" +
+	"\vDestroyUser\x12\x1e.management.DestroyUserRequest\x1a\x16.google.protobuf.EmptyB7Z5github.com/siderolabs/omni/client/api/omni/managementb\x06proto3"
 
 var (
 	file_omni_management_management_proto_rawDescOnce sync.Once
@@ -2489,7 +2820,7 @@ func file_omni_management_management_proto_rawDescGZIP() []byte {
 }
 
 var file_omni_management_management_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_omni_management_management_proto_msgTypes = make([]protoimpl.MessageInfo, 40)
+var file_omni_management_management_proto_msgTypes = make([]protoimpl.MessageInfo, 47)
 var file_omni_management_management_proto_goTypes = []any{
 	(SchematicBootloader)(0),                                        // 0: management.SchematicBootloader
 	(KubernetesSyncManifestResponse_ResponseType)(0),                // 1: management.KubernetesSyncManifestResponse.ResponseType
@@ -2528,74 +2859,91 @@ var file_omni_management_management_proto_goTypes = []any{
 	(*CreateJoinTokenResponse)(nil),                                 // 34: management.CreateJoinTokenResponse
 	(*ResetNodeUniqueTokenRequest)(nil),                             // 35: management.ResetNodeUniqueTokenRequest
 	(*ResetNodeUniqueTokenResponse)(nil),                            // 36: management.ResetNodeUniqueTokenResponse
-	(*ListServiceAccountsResponse_ServiceAccount)(nil),              // 37: management.ListServiceAccountsResponse.ServiceAccount
-	(*ListServiceAccountsResponse_ServiceAccount_PgpPublicKey)(nil), // 38: management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey
-	(*CreateSchematicRequest_Overlay)(nil),                          // 39: management.CreateSchematicRequest.Overlay
-	nil,                                                             // 40: management.CreateSchematicRequest.MetaValuesEntry
-	(*GetSupportBundleResponse_Progress)(nil),                       // 41: management.GetSupportBundleResponse.Progress
-	(*ValidateJsonSchemaResponse_Error)(nil),                        // 42: management.ValidateJsonSchemaResponse.Error
-	(*durationpb.Duration)(nil),                                     // 43: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                                   // 44: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                                           // 45: google.protobuf.Empty
-	(*common.Data)(nil),                                             // 46: common.Data
+	(*CreateUserRequest)(nil),                                       // 37: management.CreateUserRequest
+	(*CreateUserResponse)(nil),                                      // 38: management.CreateUserResponse
+	(*UpdateUserRequest)(nil),                                       // 39: management.UpdateUserRequest
+	(*DestroyUserRequest)(nil),                                      // 40: management.DestroyUserRequest
+	(*ListUsersResponse)(nil),                                       // 41: management.ListUsersResponse
+	(*ListServiceAccountsResponse_ServiceAccount)(nil),              // 42: management.ListServiceAccountsResponse.ServiceAccount
+	(*ListServiceAccountsResponse_ServiceAccount_PgpPublicKey)(nil), // 43: management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey
+	(*CreateSchematicRequest_Overlay)(nil),                          // 44: management.CreateSchematicRequest.Overlay
+	nil,                                                             // 45: management.CreateSchematicRequest.MetaValuesEntry
+	(*GetSupportBundleResponse_Progress)(nil),                       // 46: management.GetSupportBundleResponse.Progress
+	(*ValidateJsonSchemaResponse_Error)(nil),                        // 47: management.ValidateJsonSchemaResponse.Error
+	(*ListUsersResponse_User)(nil),                                  // 48: management.ListUsersResponse.User
+	nil,                                                             // 49: management.ListUsersResponse.User.SamlLabelsEntry
+	(*durationpb.Duration)(nil),                                     // 50: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                                   // 51: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                                           // 52: google.protobuf.Empty
+	(*common.Data)(nil),                                             // 53: common.Data
 }
 var file_omni_management_management_proto_depIdxs = []int32{
-	37, // 0: management.ListServiceAccountsResponse.service_accounts:type_name -> management.ListServiceAccountsResponse.ServiceAccount
-	43, // 1: management.KubeconfigRequest.service_account_ttl:type_name -> google.protobuf.Duration
+	42, // 0: management.ListServiceAccountsResponse.service_accounts:type_name -> management.ListServiceAccountsResponse.ServiceAccount
+	50, // 1: management.KubeconfigRequest.service_account_ttl:type_name -> google.protobuf.Duration
 	1,  // 2: management.KubernetesSyncManifestResponse.response_type:type_name -> management.KubernetesSyncManifestResponse.ResponseType
-	40, // 3: management.CreateSchematicRequest.meta_values:type_name -> management.CreateSchematicRequest.MetaValuesEntry
+	45, // 3: management.CreateSchematicRequest.meta_values:type_name -> management.CreateSchematicRequest.MetaValuesEntry
 	2,  // 4: management.CreateSchematicRequest.siderolink_grpc_tunnel_mode:type_name -> management.CreateSchematicRequest.SiderolinkGRPCTunnelMode
-	39, // 5: management.CreateSchematicRequest.overlay:type_name -> management.CreateSchematicRequest.Overlay
+	44, // 5: management.CreateSchematicRequest.overlay:type_name -> management.CreateSchematicRequest.Overlay
 	0,  // 6: management.CreateSchematicRequest.bootloader:type_name -> management.SchematicBootloader
-	41, // 7: management.GetSupportBundleResponse.progress:type_name -> management.GetSupportBundleResponse.Progress
-	42, // 8: management.ValidateJsonSchemaResponse.errors:type_name -> management.ValidateJsonSchemaResponse.Error
-	44, // 9: management.CreateJoinTokenRequest.expiration_time:type_name -> google.protobuf.Timestamp
-	38, // 10: management.ListServiceAccountsResponse.ServiceAccount.pgp_public_keys:type_name -> management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey
-	44, // 11: management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey.expiration:type_name -> google.protobuf.Timestamp
-	42, // 12: management.ValidateJsonSchemaResponse.Error.errors:type_name -> management.ValidateJsonSchemaResponse.Error
-	15, // 13: management.ManagementService.Kubeconfig:input_type -> management.KubeconfigRequest
-	8,  // 14: management.ManagementService.Talosconfig:input_type -> management.TalosconfigRequest
-	45, // 15: management.ManagementService.Omniconfig:input_type -> google.protobuf.Empty
-	6,  // 16: management.ManagementService.MachineLogs:input_type -> management.MachineLogsRequest
-	7,  // 17: management.ManagementService.ValidateConfig:input_type -> management.ValidateConfigRequest
-	26, // 18: management.ManagementService.ValidateJSONSchema:input_type -> management.ValidateJsonSchemaRequest
-	9,  // 19: management.ManagementService.CreateServiceAccount:input_type -> management.CreateServiceAccountRequest
-	11, // 20: management.ManagementService.RenewServiceAccount:input_type -> management.RenewServiceAccountRequest
-	45, // 21: management.ManagementService.ListServiceAccounts:input_type -> google.protobuf.Empty
-	13, // 22: management.ManagementService.DestroyServiceAccount:input_type -> management.DestroyServiceAccountRequest
-	16, // 23: management.ManagementService.KubernetesUpgradePreChecks:input_type -> management.KubernetesUpgradePreChecksRequest
-	18, // 24: management.ManagementService.KubernetesSyncManifests:input_type -> management.KubernetesSyncManifestRequest
-	20, // 25: management.ManagementService.CreateSchematic:input_type -> management.CreateSchematicRequest
-	22, // 26: management.ManagementService.GetSupportBundle:input_type -> management.GetSupportBundleRequest
-	24, // 27: management.ManagementService.ReadAuditLog:input_type -> management.ReadAuditLogRequest
-	28, // 28: management.ManagementService.MaintenanceUpgrade:input_type -> management.MaintenanceUpgradeRequest
-	30, // 29: management.ManagementService.GetMachineJoinConfig:input_type -> management.GetMachineJoinConfigRequest
-	33, // 30: management.ManagementService.CreateJoinToken:input_type -> management.CreateJoinTokenRequest
-	35, // 31: management.ManagementService.ResetNodeUniqueToken:input_type -> management.ResetNodeUniqueTokenRequest
-	3,  // 32: management.ManagementService.Kubeconfig:output_type -> management.KubeconfigResponse
-	4,  // 33: management.ManagementService.Talosconfig:output_type -> management.TalosconfigResponse
-	5,  // 34: management.ManagementService.Omniconfig:output_type -> management.OmniconfigResponse
-	46, // 35: management.ManagementService.MachineLogs:output_type -> common.Data
-	45, // 36: management.ManagementService.ValidateConfig:output_type -> google.protobuf.Empty
-	27, // 37: management.ManagementService.ValidateJSONSchema:output_type -> management.ValidateJsonSchemaResponse
-	10, // 38: management.ManagementService.CreateServiceAccount:output_type -> management.CreateServiceAccountResponse
-	12, // 39: management.ManagementService.RenewServiceAccount:output_type -> management.RenewServiceAccountResponse
-	14, // 40: management.ManagementService.ListServiceAccounts:output_type -> management.ListServiceAccountsResponse
-	45, // 41: management.ManagementService.DestroyServiceAccount:output_type -> google.protobuf.Empty
-	17, // 42: management.ManagementService.KubernetesUpgradePreChecks:output_type -> management.KubernetesUpgradePreChecksResponse
-	19, // 43: management.ManagementService.KubernetesSyncManifests:output_type -> management.KubernetesSyncManifestResponse
-	21, // 44: management.ManagementService.CreateSchematic:output_type -> management.CreateSchematicResponse
-	23, // 45: management.ManagementService.GetSupportBundle:output_type -> management.GetSupportBundleResponse
-	25, // 46: management.ManagementService.ReadAuditLog:output_type -> management.ReadAuditLogResponse
-	29, // 47: management.ManagementService.MaintenanceUpgrade:output_type -> management.MaintenanceUpgradeResponse
-	31, // 48: management.ManagementService.GetMachineJoinConfig:output_type -> management.GetMachineJoinConfigResponse
-	34, // 49: management.ManagementService.CreateJoinToken:output_type -> management.CreateJoinTokenResponse
-	36, // 50: management.ManagementService.ResetNodeUniqueToken:output_type -> management.ResetNodeUniqueTokenResponse
-	32, // [32:51] is the sub-list for method output_type
-	13, // [13:32] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	46, // 7: management.GetSupportBundleResponse.progress:type_name -> management.GetSupportBundleResponse.Progress
+	47, // 8: management.ValidateJsonSchemaResponse.errors:type_name -> management.ValidateJsonSchemaResponse.Error
+	51, // 9: management.CreateJoinTokenRequest.expiration_time:type_name -> google.protobuf.Timestamp
+	48, // 10: management.ListUsersResponse.users:type_name -> management.ListUsersResponse.User
+	43, // 11: management.ListServiceAccountsResponse.ServiceAccount.pgp_public_keys:type_name -> management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey
+	51, // 12: management.ListServiceAccountsResponse.ServiceAccount.PgpPublicKey.expiration:type_name -> google.protobuf.Timestamp
+	47, // 13: management.ValidateJsonSchemaResponse.Error.errors:type_name -> management.ValidateJsonSchemaResponse.Error
+	49, // 14: management.ListUsersResponse.User.saml_labels:type_name -> management.ListUsersResponse.User.SamlLabelsEntry
+	15, // 15: management.ManagementService.Kubeconfig:input_type -> management.KubeconfigRequest
+	8,  // 16: management.ManagementService.Talosconfig:input_type -> management.TalosconfigRequest
+	52, // 17: management.ManagementService.Omniconfig:input_type -> google.protobuf.Empty
+	6,  // 18: management.ManagementService.MachineLogs:input_type -> management.MachineLogsRequest
+	7,  // 19: management.ManagementService.ValidateConfig:input_type -> management.ValidateConfigRequest
+	26, // 20: management.ManagementService.ValidateJSONSchema:input_type -> management.ValidateJsonSchemaRequest
+	9,  // 21: management.ManagementService.CreateServiceAccount:input_type -> management.CreateServiceAccountRequest
+	11, // 22: management.ManagementService.RenewServiceAccount:input_type -> management.RenewServiceAccountRequest
+	52, // 23: management.ManagementService.ListServiceAccounts:input_type -> google.protobuf.Empty
+	13, // 24: management.ManagementService.DestroyServiceAccount:input_type -> management.DestroyServiceAccountRequest
+	16, // 25: management.ManagementService.KubernetesUpgradePreChecks:input_type -> management.KubernetesUpgradePreChecksRequest
+	18, // 26: management.ManagementService.KubernetesSyncManifests:input_type -> management.KubernetesSyncManifestRequest
+	20, // 27: management.ManagementService.CreateSchematic:input_type -> management.CreateSchematicRequest
+	22, // 28: management.ManagementService.GetSupportBundle:input_type -> management.GetSupportBundleRequest
+	24, // 29: management.ManagementService.ReadAuditLog:input_type -> management.ReadAuditLogRequest
+	28, // 30: management.ManagementService.MaintenanceUpgrade:input_type -> management.MaintenanceUpgradeRequest
+	30, // 31: management.ManagementService.GetMachineJoinConfig:input_type -> management.GetMachineJoinConfigRequest
+	33, // 32: management.ManagementService.CreateJoinToken:input_type -> management.CreateJoinTokenRequest
+	35, // 33: management.ManagementService.ResetNodeUniqueToken:input_type -> management.ResetNodeUniqueTokenRequest
+	37, // 34: management.ManagementService.CreateUser:input_type -> management.CreateUserRequest
+	52, // 35: management.ManagementService.ListUsers:input_type -> google.protobuf.Empty
+	39, // 36: management.ManagementService.UpdateUser:input_type -> management.UpdateUserRequest
+	40, // 37: management.ManagementService.DestroyUser:input_type -> management.DestroyUserRequest
+	3,  // 38: management.ManagementService.Kubeconfig:output_type -> management.KubeconfigResponse
+	4,  // 39: management.ManagementService.Talosconfig:output_type -> management.TalosconfigResponse
+	5,  // 40: management.ManagementService.Omniconfig:output_type -> management.OmniconfigResponse
+	53, // 41: management.ManagementService.MachineLogs:output_type -> common.Data
+	52, // 42: management.ManagementService.ValidateConfig:output_type -> google.protobuf.Empty
+	27, // 43: management.ManagementService.ValidateJSONSchema:output_type -> management.ValidateJsonSchemaResponse
+	10, // 44: management.ManagementService.CreateServiceAccount:output_type -> management.CreateServiceAccountResponse
+	12, // 45: management.ManagementService.RenewServiceAccount:output_type -> management.RenewServiceAccountResponse
+	14, // 46: management.ManagementService.ListServiceAccounts:output_type -> management.ListServiceAccountsResponse
+	52, // 47: management.ManagementService.DestroyServiceAccount:output_type -> google.protobuf.Empty
+	17, // 48: management.ManagementService.KubernetesUpgradePreChecks:output_type -> management.KubernetesUpgradePreChecksResponse
+	19, // 49: management.ManagementService.KubernetesSyncManifests:output_type -> management.KubernetesSyncManifestResponse
+	21, // 50: management.ManagementService.CreateSchematic:output_type -> management.CreateSchematicResponse
+	23, // 51: management.ManagementService.GetSupportBundle:output_type -> management.GetSupportBundleResponse
+	25, // 52: management.ManagementService.ReadAuditLog:output_type -> management.ReadAuditLogResponse
+	29, // 53: management.ManagementService.MaintenanceUpgrade:output_type -> management.MaintenanceUpgradeResponse
+	31, // 54: management.ManagementService.GetMachineJoinConfig:output_type -> management.GetMachineJoinConfigResponse
+	34, // 55: management.ManagementService.CreateJoinToken:output_type -> management.CreateJoinTokenResponse
+	36, // 56: management.ManagementService.ResetNodeUniqueToken:output_type -> management.ResetNodeUniqueTokenResponse
+	38, // 57: management.ManagementService.CreateUser:output_type -> management.CreateUserResponse
+	41, // 58: management.ManagementService.ListUsers:output_type -> management.ListUsersResponse
+	52, // 59: management.ManagementService.UpdateUser:output_type -> google.protobuf.Empty
+	52, // 60: management.ManagementService.DestroyUser:output_type -> google.protobuf.Empty
+	38, // [38:61] is the sub-list for method output_type
+	15, // [15:38] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_omni_management_management_proto_init() }
@@ -2609,7 +2957,7 @@ func file_omni_management_management_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_omni_management_management_proto_rawDesc), len(file_omni_management_management_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   40,
+			NumMessages:   47,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

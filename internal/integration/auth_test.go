@@ -534,6 +534,70 @@ func AssertAPIAuthz(rootCtx context.Context, rootCli *client.Client, clientFacto
 				},
 			},
 			{
+				namePrefix:    "mgmt-create-user",
+				requiredRole:  role.Admin,
+				assertSuccess: assertSuccess,
+				assertFailure: assertMissingRoleFailure,
+				fn: func(ctx context.Context, cli *client.Client) error {
+					_, err := cli.Management().CreateUser(ctx, "doesntmatter@example.com", string(role.None))
+
+					// ignore "already exists" error from a previous successful run
+					if err != nil && strings.Contains(err.Error(), "already exists") {
+						return nil
+					}
+
+					if err == nil {
+						// clean up the created user
+						_ = cli.Management().DestroyUser(ctx, "doesntmatter@example.com") //nolint:errcheck
+					}
+
+					return err
+				},
+			},
+			{
+				namePrefix:    "mgmt-list-users",
+				requiredRole:  role.Admin,
+				assertSuccess: assertSuccess,
+				assertFailure: assertMissingRoleFailure,
+				fn: func(ctx context.Context, cli *client.Client) error {
+					_, err := cli.Management().ListUsers(ctx)
+
+					return err
+				},
+			},
+			{
+				namePrefix:    "mgmt-update-user",
+				requiredRole:  role.Admin,
+				assertSuccess: assertSuccess,
+				assertFailure: assertMissingRoleFailure,
+				fn: func(ctx context.Context, cli *client.Client) error {
+					err := cli.Management().UpdateUser(ctx, "doesntmatter@example.com", string(role.None))
+
+					// ignore "not found" error
+					if status.Code(err) == codes.NotFound {
+						return nil
+					}
+
+					return err
+				},
+			},
+			{
+				namePrefix:    "mgmt-destroy-user",
+				requiredRole:  role.Admin,
+				assertSuccess: assertSuccess,
+				assertFailure: assertMissingRoleFailure,
+				fn: func(ctx context.Context, cli *client.Client) error {
+					err := cli.Management().DestroyUser(ctx, "doesntmatter@example.com")
+
+					// ignore "not found" error
+					if status.Code(err) == codes.NotFound {
+						return nil
+					}
+
+					return err
+				},
+			},
+			{
 				namePrefix:    "mgmt-logs",
 				requiredRole:  role.Reader,
 				assertSuccess: assertSuccess,
@@ -786,16 +850,6 @@ func AssertResourceAuthz(rootCtx context.Context, rootCli *client.Client, client
 
 		testCases := []resourceAuthzTestCase{
 			{
-				resource:       identity,
-				allowedVerbSet: allVerbsSet,
-				isAdminOnly:    true,
-			},
-			{
-				resource:       authres.NewUser(uuid.New().String()),
-				allowedVerbSet: allVerbsSet,
-				isAdminOnly:    true,
-			},
-			{
 				resource:       accessPolicy,
 				allowedVerbSet: allVerbsSet,
 				isAdminOnly:    true,
@@ -925,6 +979,16 @@ func AssertResourceAuthz(rootCtx context.Context, rootCli *client.Client, client
 				resource:              meta.NewNamespace("test", meta.NamespaceSpec{}),
 				allowedVerbSet:        readOnlyVerbSet,
 				isSignatureSufficient: true,
+			},
+			{
+				resource:       identity,
+				allowedVerbSet: readOnlyVerbSet,
+				isAdminOnly:    true,
+			},
+			{
+				resource:       authres.NewUser(uuid.New().String()),
+				allowedVerbSet: readOnlyVerbSet,
+				isAdminOnly:    true,
 			},
 			{
 				resource:       omni.NewClusterBootstrapStatus(uuid.New().String()),
@@ -1902,6 +1966,70 @@ func destroy(ctx context.Context, t *testing.T, omniClient *client.Client, md *r
 		return nil
 	})
 	require.NoError(t, err)
+}
+
+// AssertUserManagementAPIFlow tests the user lifecycle through the management gRPC endpoints.
+// These endpoints pass through ValidatedState(), so role validation applies.
+func AssertUserManagementAPIFlow(testCtx context.Context, cli *client.Client) TestFunc {
+	return func(t *testing.T) {
+		email := fmt.Sprintf("test-user-%s@example.com", uuid.NewString())
+
+		// Create a user with a valid role.
+		userID, err := cli.Management().CreateUser(testCtx, email, string(role.Operator))
+		require.NoError(t, err)
+		require.NotEmpty(t, userID)
+
+		// List users and verify the created user is present with the correct role.
+		users, err := cli.Management().ListUsers(testCtx)
+		require.NoError(t, err)
+
+		found := slices.ContainsFunc(users, func(u *management.ListUsersResponse_User) bool {
+			return u.Email == email && u.Role == string(role.Operator) && u.Id == userID
+		})
+		assert.True(t, found, "created user not found in list")
+
+		// Update the user's role.
+		require.NoError(t, cli.Management().UpdateUser(testCtx, email, string(role.Admin)))
+
+		users, err = cli.Management().ListUsers(testCtx)
+		require.NoError(t, err)
+
+		found = slices.ContainsFunc(users, func(u *management.ListUsersResponse_User) bool {
+			return u.Email == email && u.Role == string(role.Admin)
+		})
+		assert.True(t, found, "updated user not found with new role")
+
+		// Create with invalid role should fail.
+		_, err = cli.Management().CreateUser(testCtx, "invalid-role@example.com", "SuperAdmin")
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "unknown role")
+
+		// Update with invalid role should fail.
+		err = cli.Management().UpdateUser(testCtx, email, "MegaAdmin")
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "unknown role")
+
+		// Create duplicate user should fail.
+		_, err = cli.Management().CreateUser(testCtx, email, string(role.Reader))
+		assert.Error(t, err)
+		assert.ErrorContains(t, err, "already exists")
+
+		// Destroy the user.
+		require.NoError(t, cli.Management().DestroyUser(testCtx, email))
+
+		// Verify user is gone from the list.
+		users, err = cli.Management().ListUsers(testCtx)
+		require.NoError(t, err)
+
+		found = slices.ContainsFunc(users, func(u *management.ListUsersResponse_User) bool {
+			return u.Email == email
+		})
+		assert.False(t, found, "destroyed user should not be in list")
+
+		// Destroy non-existent user should fail with NotFound.
+		err = cli.Management().DestroyUser(testCtx, "nonexistent@example.com")
+		assert.Equal(t, codes.NotFound, status.Code(err))
+	}
 }
 
 func verbToString(verb state.Verb) string {

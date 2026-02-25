@@ -334,7 +334,7 @@ func NewRuntime(cfg *config.Params, talosClientFactory *talos.ClientFactory, dns
 		clusterValidationOptions(defaultState, cfg.EtcdBackup, cfg.Services.EmbeddedDiscoveryService),
 		relationLabelsValidationOptions(),
 		accessPolicyValidationOptions(),
-		authorizationValidationOptions(defaultState, cfg.Auth.Saml.GetEnabled()),
+		authorizationValidationOptions(defaultState),
 		roleValidationOptions(),
 		machineSetNodeValidationOptions(defaultState),
 		machineSetValidationOptions(defaultState, storeFactory),
@@ -634,6 +634,11 @@ func (r *Runtime) Delete(ctx context.Context, setters ...runtime.QueryOption) er
 	}
 
 	return r.state.TeardownAndDestroy(ctx, md)
+}
+
+// ValidatedState returns the validated runtime state.
+func (r *Runtime) ValidatedState() state.State { //nolint:ireturn
+	return r.state
 }
 
 // CachedState returns runtime cached state.

@@ -11,6 +11,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { Runtime } from '@/api/common/omni.pb'
 import { type Resource, ResourceService } from '@/api/grpc'
+import { ManagementService } from '@/api/omni/management/management.pb'
 import type { IdentitySpec, UserSpec } from '@/api/omni/specs/auth.pb'
 import { withRuntime } from '@/api/options'
 import {
@@ -25,7 +26,6 @@ import {
 import TButton from '@/components/common/Button/TButton.vue'
 import TSelectList from '@/components/common/SelectList/TSelectList.vue'
 import { canManageUsers } from '@/methods/auth'
-import { updateRole } from '@/methods/user'
 import { useResourceWatch } from '@/methods/useResourceWatch'
 import { showError, showSuccess } from '@/notification'
 import CloseButton from '@/views/omni/Modals/CloseButton.vue'
@@ -82,7 +82,7 @@ const handleRoleUpdate = async () => {
   }
 
   try {
-    await updateRole(userID.value, role.value)
+    await ManagementService.UpdateUser({ email: id as string, role: role.value })
   } catch (e) {
     showError(`Failed to Update ${object}`, e.message)
 

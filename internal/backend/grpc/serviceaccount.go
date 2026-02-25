@@ -8,6 +8,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/cosi-project/runtime/pkg/safe"
@@ -105,8 +106,6 @@ func (s *managementServer) ListServiceAccounts(ctx context.Context, _ *emptypb.E
 		return nil, err
 	}
 
-	ctx = actor.MarkContextAsInternalActor(ctx)
-
 	serviceAccountStatus, err := safe.StateListAll[*authres.ServiceAccountStatus](
 		ctx,
 		s.omniState,
@@ -147,9 +146,14 @@ func (s *managementServer) ListServiceAccounts(ctx context.Context, _ *emptypb.E
 }
 
 func (s *managementServer) DestroyServiceAccount(ctx context.Context, req *management.DestroyServiceAccountRequest) (*emptypb.Empty, error) {
-	_, err := s.authCheckGRPC(ctx, auth.WithRole(role.Admin))
+	checkResult, err := s.authCheckGRPC(ctx, auth.WithRole(role.Admin))
 	if err != nil {
 		return nil, err
+	}
+
+	sa := pkgaccess.ParseServiceAccountFromName(req.Name)
+	if strings.EqualFold(checkResult.Identity, sa.FullID()) {
+		return nil, status.Error(codes.InvalidArgument, "destroying your own service account is not allowed")
 	}
 
 	ctx = actor.MarkContextAsInternalActor(ctx)

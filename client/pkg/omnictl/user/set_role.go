@@ -7,11 +7,9 @@ package user
 import (
 	"context"
 
-	"github.com/cosi-project/runtime/pkg/safe"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/omni/client/pkg/client"
-	"github.com/siderolabs/omni/client/pkg/omni/resources/auth"
 	"github.com/siderolabs/omni/client/pkg/omnictl/internal/access"
 )
 
@@ -33,24 +31,7 @@ var setRoleCmd = &cobra.Command{
 
 func setUserRole(email string) func(ctx context.Context, client *client.Client) error {
 	return func(ctx context.Context, client *client.Client) error {
-		identity, err := safe.ReaderGetByID[*auth.Identity](ctx, client.Omni().State(), email)
-		if err != nil {
-			return err
-		}
-
-		_, err = safe.StateUpdateWithConflicts(ctx, client.Omni().State(),
-			auth.NewUser(identity.TypedSpec().Value.UserId).Metadata(),
-			func(user *auth.User) error {
-				user.TypedSpec().Value.Role = setRoleCmdFlags.role
-
-				return nil
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		return nil
+		return client.Management().UpdateUser(ctx, email, setRoleCmdFlags.role)
 	}
 }
 

@@ -41,6 +41,10 @@ const (
 	ManagementService_GetMachineJoinConfig_FullMethodName       = "/management.ManagementService/GetMachineJoinConfig"
 	ManagementService_CreateJoinToken_FullMethodName            = "/management.ManagementService/CreateJoinToken"
 	ManagementService_ResetNodeUniqueToken_FullMethodName       = "/management.ManagementService/ResetNodeUniqueToken"
+	ManagementService_CreateUser_FullMethodName                 = "/management.ManagementService/CreateUser"
+	ManagementService_ListUsers_FullMethodName                  = "/management.ManagementService/ListUsers"
+	ManagementService_UpdateUser_FullMethodName                 = "/management.ManagementService/UpdateUser"
+	ManagementService_DestroyUser_FullMethodName                = "/management.ManagementService/DestroyUser"
 )
 
 // ManagementServiceClient is the client API for ManagementService service.
@@ -66,6 +70,10 @@ type ManagementServiceClient interface {
 	GetMachineJoinConfig(ctx context.Context, in *GetMachineJoinConfigRequest, opts ...grpc.CallOption) (*GetMachineJoinConfigResponse, error)
 	CreateJoinToken(ctx context.Context, in *CreateJoinTokenRequest, opts ...grpc.CallOption) (*CreateJoinTokenResponse, error)
 	ResetNodeUniqueToken(ctx context.Context, in *ResetNodeUniqueTokenRequest, opts ...grpc.CallOption) (*ResetNodeUniqueTokenResponse, error)
+	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
+	ListUsers(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListUsersResponse, error)
+	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DestroyUser(ctx context.Context, in *DestroyUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type managementServiceClient struct {
@@ -302,6 +310,46 @@ func (c *managementServiceClient) ResetNodeUniqueToken(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *managementServiceClient) CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateUserResponse)
+	err := c.cc.Invoke(ctx, ManagementService_CreateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managementServiceClient) ListUsers(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*ListUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUsersResponse)
+	err := c.cc.Invoke(ctx, ManagementService_ListUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managementServiceClient) UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ManagementService_UpdateUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *managementServiceClient) DestroyUser(ctx context.Context, in *DestroyUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ManagementService_DestroyUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ManagementServiceServer is the server API for ManagementService service.
 // All implementations must embed UnimplementedManagementServiceServer
 // for forward compatibility.
@@ -325,6 +373,10 @@ type ManagementServiceServer interface {
 	GetMachineJoinConfig(context.Context, *GetMachineJoinConfigRequest) (*GetMachineJoinConfigResponse, error)
 	CreateJoinToken(context.Context, *CreateJoinTokenRequest) (*CreateJoinTokenResponse, error)
 	ResetNodeUniqueToken(context.Context, *ResetNodeUniqueTokenRequest) (*ResetNodeUniqueTokenResponse, error)
+	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
+	ListUsers(context.Context, *emptypb.Empty) (*ListUsersResponse, error)
+	UpdateUser(context.Context, *UpdateUserRequest) (*emptypb.Empty, error)
+	DestroyUser(context.Context, *DestroyUserRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedManagementServiceServer()
 }
 
@@ -391,6 +443,18 @@ func (UnimplementedManagementServiceServer) CreateJoinToken(context.Context, *Cr
 }
 func (UnimplementedManagementServiceServer) ResetNodeUniqueToken(context.Context, *ResetNodeUniqueTokenRequest) (*ResetNodeUniqueTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResetNodeUniqueToken not implemented")
+}
+func (UnimplementedManagementServiceServer) CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateUser not implemented")
+}
+func (UnimplementedManagementServiceServer) ListUsers(context.Context, *emptypb.Empty) (*ListUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUsers not implemented")
+}
+func (UnimplementedManagementServiceServer) UpdateUser(context.Context, *UpdateUserRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUser not implemented")
+}
+func (UnimplementedManagementServiceServer) DestroyUser(context.Context, *DestroyUserRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DestroyUser not implemented")
 }
 func (UnimplementedManagementServiceServer) mustEmbedUnimplementedManagementServiceServer() {}
 func (UnimplementedManagementServiceServer) testEmbeddedByValue()                           {}
@@ -727,6 +791,78 @@ func _ManagementService_ResetNodeUniqueToken_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ManagementService_CreateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagementServiceServer).CreateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagementService_CreateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagementServiceServer).CreateUser(ctx, req.(*CreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ManagementService_ListUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagementServiceServer).ListUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagementService_ListUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagementServiceServer).ListUsers(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ManagementService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagementServiceServer).UpdateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagementService_UpdateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagementServiceServer).UpdateUser(ctx, req.(*UpdateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ManagementService_DestroyUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DestroyUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ManagementServiceServer).DestroyUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ManagementService_DestroyUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ManagementServiceServer).DestroyUser(ctx, req.(*DestroyUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ManagementService_ServiceDesc is the grpc.ServiceDesc for ManagementService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -793,6 +929,22 @@ var ManagementService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResetNodeUniqueToken",
 			Handler:    _ManagementService_ResetNodeUniqueToken_Handler,
+		},
+		{
+			MethodName: "CreateUser",
+			Handler:    _ManagementService_CreateUser_Handler,
+		},
+		{
+			MethodName: "ListUsers",
+			Handler:    _ManagementService_ListUsers_Handler,
+		},
+		{
+			MethodName: "UpdateUser",
+			Handler:    _ManagementService_UpdateUser_Handler,
+		},
+		{
+			MethodName: "DestroyUser",
+			Handler:    _ManagementService_DestroyUser_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

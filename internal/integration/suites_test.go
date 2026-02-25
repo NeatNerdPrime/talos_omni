@@ -1196,6 +1196,11 @@ Test authorization on accessing Omni API, some tests run without a cluster, some
 			AssertServiceAccountAPIFlow(t.Context(), options.omniClient),
 		)
 
+		t.Run(
+			"UserManagementAPIShouldWork",
+			AssertUserManagementAPIFlow(t.Context(), options.omniClient),
+		)
+
 		clientFactory := newTestClientFactory(omniEndpoint, options.omniClient)
 		t.Cleanup(func() {
 			clientFactory.close() //nolint:errcheck

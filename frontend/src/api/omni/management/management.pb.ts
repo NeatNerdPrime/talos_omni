@@ -232,6 +232,35 @@ export type ResetNodeUniqueTokenRequest = {
 export type ResetNodeUniqueTokenResponse = {
 }
 
+export type CreateUserRequest = {
+  email?: string
+  role?: string
+}
+
+export type CreateUserResponse = {
+  user_id?: string
+}
+
+export type UpdateUserRequest = {
+  email?: string
+  role?: string
+}
+
+export type DestroyUserRequest = {
+  email?: string
+}
+
+export type ListUsersResponseUser = {
+  id?: string
+  email?: string
+  role?: string
+  saml_labels?: {[key: string]: string}
+}
+
+export type ListUsersResponse = {
+  users?: ListUsersResponseUser[]
+}
+
 export class ManagementService {
   static Kubeconfig(req: KubeconfigRequest, ...options: fm.fetchOption[]): Promise<KubeconfigResponse> {
     return fm.fetchReq<KubeconfigRequest, KubeconfigResponse>("POST", `/management.ManagementService/Kubeconfig`, req, ...options)
@@ -289,5 +318,17 @@ export class ManagementService {
   }
   static ResetNodeUniqueToken(req: ResetNodeUniqueTokenRequest, ...options: fm.fetchOption[]): Promise<ResetNodeUniqueTokenResponse> {
     return fm.fetchReq<ResetNodeUniqueTokenRequest, ResetNodeUniqueTokenResponse>("POST", `/management.ManagementService/ResetNodeUniqueToken`, req, ...options)
+  }
+  static CreateUser(req: CreateUserRequest, ...options: fm.fetchOption[]): Promise<CreateUserResponse> {
+    return fm.fetchReq<CreateUserRequest, CreateUserResponse>("POST", `/management.ManagementService/CreateUser`, req, ...options)
+  }
+  static ListUsers(req: GoogleProtobufEmpty.Empty, ...options: fm.fetchOption[]): Promise<ListUsersResponse> {
+    return fm.fetchReq<GoogleProtobufEmpty.Empty, ListUsersResponse>("POST", `/management.ManagementService/ListUsers`, req, ...options)
+  }
+  static UpdateUser(req: UpdateUserRequest, ...options: fm.fetchOption[]): Promise<GoogleProtobufEmpty.Empty> {
+    return fm.fetchReq<UpdateUserRequest, GoogleProtobufEmpty.Empty>("POST", `/management.ManagementService/UpdateUser`, req, ...options)
+  }
+  static DestroyUser(req: DestroyUserRequest, ...options: fm.fetchOption[]): Promise<GoogleProtobufEmpty.Empty> {
+    return fm.fetchReq<DestroyUserRequest, GoogleProtobufEmpty.Empty>("POST", `/management.ManagementService/DestroyUser`, req, ...options)
   }
 }

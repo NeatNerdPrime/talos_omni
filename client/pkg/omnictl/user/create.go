@@ -6,15 +6,10 @@ package user
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/cosi-project/runtime/pkg/safe"
-	"github.com/cosi-project/runtime/pkg/state"
-	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 
 	"github.com/siderolabs/omni/client/pkg/client"
-	"github.com/siderolabs/omni/client/pkg/omni/resources/auth"
 	"github.com/siderolabs/omni/client/pkg/omnictl/internal/access"
 )
 
@@ -36,30 +31,9 @@ var createCmd = &cobra.Command{
 
 func createUser(email string) func(ctx context.Context, client *client.Client) error {
 	return func(ctx context.Context, client *client.Client) error {
-		user := auth.NewUser(uuid.NewString())
+		_, err := client.Management().CreateUser(ctx, email, createCmdFlags.role)
 
-		user.TypedSpec().Value.Role = createCmdFlags.role
-
-		identity := auth.NewIdentity(email)
-
-		identity.Metadata().Labels().Set(auth.LabelIdentityUserID, user.Metadata().ID())
-
-		identity.TypedSpec().Value.UserId = user.Metadata().ID()
-
-		existing, err := safe.ReaderGetByID[*auth.Identity](ctx, client.Omni().State(), email)
-		if err != nil && !state.IsNotFoundError(err) {
-			return err
-		}
-
-		if existing != nil {
-			return fmt.Errorf("identity with email %q already exists", email)
-		}
-
-		if err := client.Omni().State().Create(ctx, user); err != nil {
-			return err
-		}
-
-		return client.Omni().State().Create(ctx, identity)
+		return err
 	}
 }
 

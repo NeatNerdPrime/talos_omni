@@ -91,7 +91,7 @@ func MakeServiceServers(
 			provider: oidcProvider,
 		},
 		newManagementServer(
-			state,
+			omniRuntime.ValidatedState(),
 			jwtSigningKeyProvider,
 			logHandler,
 			logger.With(logging.Component("management_server")),

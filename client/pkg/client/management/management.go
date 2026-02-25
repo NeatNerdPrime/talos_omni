@@ -186,6 +186,48 @@ func (client *Client) DestroyServiceAccount(ctx context.Context, name string) er
 	return err
 }
 
+// CreateUser creates a user and returns the user ID.
+func (client *Client) CreateUser(ctx context.Context, email, role string) (string, error) {
+	resp, err := client.conn.CreateUser(ctx, &management.CreateUserRequest{
+		Email: email,
+		Role:  role,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.UserId, nil
+}
+
+// ListUsers lists all users.
+func (client *Client) ListUsers(ctx context.Context) ([]*management.ListUsersResponse_User, error) {
+	response, err := client.conn.ListUsers(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	return response.GetUsers(), nil
+}
+
+// UpdateUser updates the role of the user with the given email.
+func (client *Client) UpdateUser(ctx context.Context, email, role string) error {
+	_, err := client.conn.UpdateUser(ctx, &management.UpdateUserRequest{
+		Email: email,
+		Role:  role,
+	})
+
+	return err
+}
+
+// DestroyUser deletes a user.
+func (client *Client) DestroyUser(ctx context.Context, email string) error {
+	_, err := client.conn.DestroyUser(ctx, &management.DestroyUserRequest{
+		Email: email,
+	})
+
+	return err
+}
+
 // GetSupportBundle generates support bundle on Omni server and returns it to the client.
 func (client *Client) GetSupportBundle(ctx context.Context, cluster string, progress chan *management.GetSupportBundleResponse_Progress) ([]byte, error) {
 	if progress != nil {

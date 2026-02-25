@@ -244,6 +244,35 @@ message ResetNodeUniqueTokenRequest {
 
 message ResetNodeUniqueTokenResponse {}
 
+message CreateUserRequest {
+  string email = 1;
+  string role = 2;
+}
+
+message CreateUserResponse {
+  string user_id = 1;
+}
+
+message UpdateUserRequest {
+  string email = 1;
+  string role = 2;
+}
+
+message DestroyUserRequest {
+  string email = 1;
+}
+
+message ListUsersResponse {
+  message User {
+    string id = 1;
+    string email = 2;
+    string role = 3;
+    map<string, string> saml_labels = 4;
+  }
+
+  repeated User users = 1;
+}
+
 service ManagementService {
   rpc Kubeconfig(KubeconfigRequest) returns (KubeconfigResponse);
   rpc Talosconfig(TalosconfigRequest) returns (TalosconfigResponse);
@@ -264,4 +293,8 @@ service ManagementService {
   rpc GetMachineJoinConfig(GetMachineJoinConfigRequest) returns (GetMachineJoinConfigResponse);
   rpc CreateJoinToken(CreateJoinTokenRequest) returns (CreateJoinTokenResponse);
   rpc ResetNodeUniqueToken(ResetNodeUniqueTokenRequest) returns (ResetNodeUniqueTokenResponse);
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc ListUsers(google.protobuf.Empty) returns (ListUsersResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (google.protobuf.Empty);
+  rpc DestroyUser(DestroyUserRequest) returns (google.protobuf.Empty);
 }
