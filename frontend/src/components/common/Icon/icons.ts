@@ -41,6 +41,7 @@ export const icons = {
   ),
   'arrow-up-tray': ArrowUpTrayIcon,
   'arrow-up': defineAsyncComponent(() => import('../../icons/IconArrowUp.vue')),
+  'arrows-up-down': defineAsyncComponent(() => import('../../icons/IconArrowsUpDown.vue')),
   attention: defineAsyncComponent(() => import('../../icons/IconAttention.vue')),
   aws: defineAsyncComponent(() => import('../../icons/IconAWS.vue')),
   'bootstrap-manifests': DocumentTextIcon,

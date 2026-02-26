@@ -7,20 +7,17 @@ included in the LICENSE file.
 <script setup lang="ts">
 import pluralize from 'pluralize'
 import { AccordionContent, AccordionHeader, AccordionItem, AccordionTrigger } from 'reka-ui'
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { Runtime } from '@/api/common/omni.pb'
 import type { Resource } from '@/api/grpc'
-import { ResourceService } from '@/api/grpc'
 import type {
   ClusterMachineRequestStatusSpec,
   ClusterMachineStatusSpec,
-  MachineClassSpec,
   MachineSetStatusSpec,
 } from '@/api/omni/specs/omni.pb'
 import { MachineSetSpecMachineAllocationType } from '@/api/omni/specs/omni.pb'
-import { withRuntime } from '@/api/options'
 import {
   ClusterMachineRequestStatusType,
   ClusterMachineStatusType,
@@ -29,26 +26,21 @@ import {
   LabelControlPlaneRole,
   LabelMachineRequestInUse,
   LabelMachineSet,
-  MachineClassType,
   MachineSetStatusType,
 } from '@/api/resources'
 import { itemID } from '@/api/watch'
 import TActionsBox from '@/components/common/ActionsBox/TActionsBox.vue'
 import TActionsBoxItem from '@/components/common/ActionsBox/TActionsBoxItem.vue'
-import IconButton from '@/components/common/Button/IconButton.vue'
 import TButton from '@/components/common/Button/TButton.vue'
 import TIcon from '@/components/common/Icon/TIcon.vue'
-import TSpinner from '@/components/common/Spinner/TSpinner.vue'
-import TInput from '@/components/common/TInput/TInput.vue'
 import { setupClusterPermissions } from '@/methods/auth'
 import {
   controlPlaneMachineSetId,
   defaultWorkersMachineSetId,
   machineSetTitle,
-  scaleMachineSet,
 } from '@/methods/machineset'
 import { useResourceWatch } from '@/methods/useResourceWatch'
-import { showError } from '@/notification'
+import ScaleMachinesModal from '@/views/cluster/ClusterMachines/ScaleMachinesModal.vue'
 
 import ClusterMachine from './ClusterMachine.vue'
 import MachineRequest from './MachineRequest.vue'
@@ -72,29 +64,7 @@ const { data: machineSet } = useResourceWatch<MachineSetStatusSpec>(() => ({
 }))
 
 const clusterID = computed(() => machineSet.value?.metadata.labels?.[LabelCluster] ?? '')
-const editingMachinesCount = ref(false)
-const machineCount = ref(machineSet.value?.spec.machine_allocation?.machine_count ?? 1)
-const scaling = ref(false)
-const canUseAll = ref<boolean | undefined>()
-
-watch(editingMachinesCount, async (enabled: boolean, wasEnabled: boolean) => {
-  if (!machineSet.value?.spec.machine_allocation?.name) {
-    return
-  }
-
-  if (!wasEnabled && enabled && canUseAll.value === undefined) {
-    const machineClass: Resource<MachineClassSpec> = await ResourceService.Get(
-      {
-        type: MachineClassType,
-        id: machineSet.value.spec.machine_allocation?.name,
-        namespace: DefaultNamespace,
-      },
-      withRuntime(Runtime.Omni),
-    )
-
-    canUseAll.value = machineClass.spec.auto_provision === undefined
-  }
-})
+const scaleMachinesModalOpen = ref(false)
 
 const hiddenMachinesCount = computed(() => {
   if (showMachinesCount.value === undefined) {
@@ -116,7 +86,7 @@ const { data: machines } = useResourceWatch<ClusterMachineStatusSpec>(() => ({
 }))
 
 const { data: requests } = useResourceWatch<ClusterMachineRequestStatusSpec>(() => ({
-  skip: !clusterID.value || !machineSet.value?.spec.machine_allocation,
+  skip: !clusterID.value || !isMachineSetScalable(machineSet.value),
   resource: {
     namespace: DefaultNamespace,
     type: ClusterMachineRequestStatusType,
@@ -165,22 +135,6 @@ const canRemoveMachineSet = computed(() => {
   return !deleteProtected.has(machineSetId)
 })
 
-const updateMachineCount = async (
-  allocationType: MachineSetSpecMachineAllocationType = MachineSetSpecMachineAllocationType.Static,
-) => {
-  scaling.value = true
-
-  try {
-    await scaleMachineSet(machineSetId, machineCount.value, allocationType)
-  } catch (e) {
-    showError(`Failed to Scale Machine Set ${machineSetId}`, `Error: ${e.message}`)
-  }
-
-  scaling.value = false
-
-  editingMachinesCount.value = false
-}
-
 const requestedMachines = computed(() => {
   if (
     machineSet.value?.spec.machine_allocation?.allocation_type ===
@@ -194,16 +148,24 @@ const requestedMachines = computed(() => {
 
 const machineClassMachineCount = computed(() => {
   if (
-    machineSet.value?.spec?.machine_allocation?.allocation_type ===
+    machineSet.value?.spec.machine_allocation?.allocation_type ===
     MachineSetSpecMachineAllocationType.Unlimited
   ) {
     return 'All Machines'
   }
 
-  return pluralize('Machine', machineSet.value?.spec?.machine_allocation?.machine_count ?? 0, true)
+  return pluralize('Machine', machineSet.value?.spec.machine_allocation?.machine_count ?? 0, true)
 })
 
 const sectionHeadingId = useId()
+
+function isMachineSetScalable(
+  machineSet?: Resource<MachineSetStatusSpec>,
+): machineSet is Resource<
+  MachineSetStatusSpec & Required<Pick<MachineSetStatusSpec, 'machine_allocation'>>
+> {
+  return !!machineSet?.spec.machine_allocation
+}
 </script>
 
 <template>
@@ -216,6 +178,7 @@ const sectionHeadingId = useId()
       isSubgrid ? 'col-span-full grid-cols-subgrid' : 'grid-cols-[repeat(4,1fr)_--spacing(18)]'
     "
     :aria-labelledby="sectionHeadingId"
+    v-bind="$attrs"
   >
     <AccordionHeader class="col-span-full grid grid-cols-subgrid items-center p-2 pr-4 text-xs">
       <AccordionTrigger
@@ -238,56 +201,31 @@ const sectionHeadingId = useId()
         </div>
       </AccordionTrigger>
 
-      <TSpinner v-if="scaling" class="size-4 shrink-0" aria-label="loading" />
-      <div v-else-if="!editingMachinesCount" class="flex items-center gap-1">
-        <div class="flex items-center">
-          {{ machineSet?.spec?.machines?.healthy || 0 }}/
-          <div :class="{ 'mt-0.5 text-lg': requestedMachines === '∞' }">
-            {{ requestedMachines }}
-          </div>
+      <div class="flex items-center">
+        {{ machineSet?.spec.machines?.healthy || 0 }}/
+        <div :class="{ 'mt-0.5 text-lg': requestedMachines === '∞' }">
+          {{ requestedMachines }}
         </div>
-        <IconButton
-          v-if="machineSet?.spec.machine_allocation?.name"
-          icon="edit"
-          @click="editingMachinesCount = !editingMachinesCount"
-        />
-      </div>
-      <div v-else class="flex items-center gap-1">
-        <div class="w-12">
-          <TInput
-            v-model="machineCount"
-            :min="0"
-            class="h-6"
-            compact
-            type="number"
-            @keydown.enter="() => updateMachineCount()"
-          />
-        </div>
-        <IconButton icon="check" @click="() => updateMachineCount()" />
-        <TButton
-          v-if="canUseAll"
-          variant="subtle"
-          size="xs"
-          @click="() => updateMachineCount(MachineSetSpecMachineAllocationType.Unlimited)"
-        >
-          Use All
-        </TButton>
       </div>
 
       <MachineSetPhase
         v-if="machineSet"
         :item="machineSet"
-        :class="{ 'col-span-2': !machineSet.spec.machine_allocation?.name }"
+        :class="{ 'col-span-2': !isMachineSetScalable(machineSet) }"
       />
 
-      <div
-        v-if="machineSet?.spec.machine_allocation?.name"
-        class="max-w-min rounded bg-naturals-n4 px-3 py-2 whitespace-nowrap"
+      <TButton
+        v-if="isMachineSetScalable(machineSet)"
+        size="sm"
+        class="justify-self-start text-xs"
+        variant="primary"
+        icon="edit"
+        @click="scaleMachinesModalOpen = true"
       >
-        Machine Class: {{ machineSet.spec.machine_allocation?.name }} ({{
+        Machine Class: {{ machineSet.spec.machine_allocation.name }} ({{
           machineClassMachineCount
         }})
-      </div>
+      </TButton>
 
       <div class="flex items-center justify-end">
         <TActionsBox v-if="canRemoveMachineSet && machineSet">
@@ -329,6 +267,12 @@ const sectionHeadingId = useId()
       </div>
     </AccordionContent>
   </AccordionItem>
+
+  <ScaleMachinesModal
+    v-if="isMachineSetScalable(machineSet)"
+    v-model:open="scaleMachinesModalOpen"
+    :machine-set="machineSet"
+  />
 </template>
 
 <style scoped>
