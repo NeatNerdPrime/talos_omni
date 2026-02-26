@@ -70,11 +70,11 @@ const clusterDestroyDialogOpen = ref(false)
   >
     <CollapsibleTrigger
       :aria-labelledby="labelId"
-      class="group col-span-full grid grid-cols-subgrid items-center bg-naturals-n1 p-4 pl-2 text-left hover:bg-naturals-n3"
+      class="group/collapsible-trigger col-span-full grid grid-cols-subgrid items-center bg-naturals-n1 p-4 pl-2 text-left hover:bg-naturals-n3"
     >
       <div class="flex min-w-0 items-center gap-2">
         <TIcon
-          class="size-5 shrink-0 rounded-md bg-naturals-n4 transition-transform duration-250 group-data-[state=open]:rotate-180 hover:text-naturals-n13"
+          class="size-5 shrink-0 rounded-md bg-naturals-n4 transition-transform duration-250 group-data-[state=open]/collapsible-trigger:rotate-180 hover:text-naturals-n13"
           icon="drop-up"
           aria-hidden="true"
         />
@@ -101,13 +101,21 @@ const clusterDestroyDialogOpen = ref(false)
 
       <ClusterStatus :cluster="item" />
 
-      <ItemLabels
-        v-if="item"
-        :resource="item"
-        :add-label-func="addClusterLabels"
-        :remove-label-func="removeClusterLabels"
-        @filter-label="(label) => $emit('filterLabels', label)"
-      />
+      <div class="flex items-center gap-2 text-naturals-n10">
+        <Tooltip :description="`Talos version v${item.spec.talos_version}`">
+          <span class="resource-label label-orange flex items-center gap-1">
+            <TIcon class="size-3.5 shrink-0" icon="talos" />
+            {{ item.spec.talos_version }}
+          </span>
+        </Tooltip>
+
+        <Tooltip :description="`Kubernetes version v${item.spec.kubernetes_version}`">
+          <span class="resource-label label-cyan flex items-center gap-1">
+            <TIcon class="size-3.5 shrink-0" icon="kubernetes" />
+            {{ item.spec.kubernetes_version }}
+          </span>
+        </Tooltip>
+      </div>
 
       <div class="flex items-center justify-self-end">
         <Tooltip description="Open Cluster Dashboard" class="h-6">
@@ -180,6 +188,15 @@ const clusterDestroyDialogOpen = ref(false)
       :aria-labelledby="labelId"
       class="collapsible-content col-span-full grid grid-cols-subgrid"
     >
+      <div class="col-span-full border-t border-naturals-n6 bg-naturals-n1 px-4 py-2">
+        <ItemLabels
+          :resource="item"
+          :add-label-func="addClusterLabels"
+          :remove-label-func="removeClusterLabels"
+          @filter-label="(label) => $emit('filterLabels', label)"
+        />
+      </div>
+
       <ClusterMachines :cluster-i-d="item.metadata.id!" is-subgrid />
     </CollapsibleContent>
 

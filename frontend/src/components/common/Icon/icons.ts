@@ -130,6 +130,7 @@ export const icons = {
   'sidero-monochrome': defineAsyncComponent(() => import('../../icons/IconSideroMonochrome.vue')),
   sidero: defineAsyncComponent(() => import('../../icons/IconSidero.vue')),
   tag: TagIcon,
+  talos: defineAsyncComponent(() => import('../../icons/IconTalos.vue')),
   'talos-config': defineAsyncComponent(() => import('../../icons/IconTalosConfig.vue')),
   terminal: defineAsyncComponent(() => import('../../icons/IconTerminal.vue')),
   time: defineAsyncComponent(() => import('../../icons/IconTime.vue')),

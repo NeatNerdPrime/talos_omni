@@ -3,7 +3,8 @@
 // Use of this software is governed by the Business Source License
 // included in the LICENSE file.
 import { createGetMock, createWatchStreamMock, server } from '@msw/server'
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { http, HttpResponse } from 'msw'
 import { expect, test } from 'vitest'
 import { createRouter, createWebHistory } from 'vue-router'
@@ -66,6 +67,8 @@ test('lock if locked', async () => {
 })
 
 test('collapsing stops ClusterMachines resource watches', async () => {
+  const user = userEvent.setup()
+
   let activeWatches = 0
 
   createWatchStreamMock()
@@ -101,7 +104,7 @@ test('collapsing stops ClusterMachines resource watches', async () => {
 
   await waitFor(() => expect(activeWatches).toBe(2))
 
-  fireEvent.click(document.querySelector('button.group')!)
+  await user.click(screen.getByRole('button', { name: 'collapse-watches-test' }))
 
   await waitFor(() => expect(activeWatches).toBe(0))
 })

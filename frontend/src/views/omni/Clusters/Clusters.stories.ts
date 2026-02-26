@@ -44,6 +44,7 @@ import {
   MachineSetStatusType,
   MachineSetType,
   MachineStatusLabelConnected,
+  UpdateLocked,
   VirtualNamespace,
 } from '@/api/resources'
 import MachineSetPhase from '@/views/cluster/ClusterMachines/MachineSetPhase.vue'
@@ -75,6 +76,8 @@ export const Data: Story = {
                   machines: { total: 3, healthy: 3 },
                   phase: faker.helpers.enumValue(ClusterStatusSpecPhase),
                   ready: faker.datatype.boolean(),
+                  talos_version: faker.system.semver(),
+                  kubernetes_version: faker.system.semver(),
                 },
                 metadata: {
                   annotations: faker.helpers.maybe(() => ({ [ClusterLocked]: '' })),
@@ -175,6 +178,7 @@ export const Data: Story = {
                       .slugify(faker.word.words({ count: { min: 1, max: 3 } }))
                       .toLocaleLowerCase(),
                   })),
+                  locked_updates: faker.helpers.maybe(() => faker.number.int({ min: 1, max: 10 })),
                 },
                 metadata: {
                   id,
@@ -218,6 +222,7 @@ export const Data: Story = {
                     [LabelCluster]: clusterLabel,
                     [LabelMachineSet]: machineSetLabel,
                     ...faker.helpers.maybe(() => ({ [MachineStatusLabelConnected]: '' })),
+                    ...faker.helpers.maybe(() => ({ [UpdateLocked]: '' })),
                   },
                 },
               }),
@@ -240,8 +245,27 @@ export const Data: Story = {
               () => ({
                 spec: {
                   machine_uuid: faker.string.uuid(),
-                  stage: faker.helpers.enumValue(ClusterMachineRequestStatusSpecStage),
-                  status: faker.word.words(3),
+                  ...faker.helpers.arrayElement([
+                    {
+                      stage: ClusterMachineRequestStatusSpecStage.PENDING,
+                      status: 'Waiting for the infra provider to start provision',
+                    },
+                    {
+                      stage: ClusterMachineRequestStatusSpecStage.DEPROVISIONING,
+                      status: 'Waiting for the infra provider to finish teardown',
+                    },
+                    {
+                      stage: ClusterMachineRequestStatusSpecStage.PROVISIONED,
+                      status: 'Waiting for the machine to join Omni',
+                    },
+                    {
+                      stage: ClusterMachineRequestStatusSpecStage.FAILED,
+                      status: `Provision Failed: ${faker.hacker.phrase()}`,
+                    },
+                    { stage: ClusterMachineRequestStatusSpecStage.PROVISIONING },
+                    { stage: ClusterMachineRequestStatusSpecStage.PENDING },
+                    { stage: ClusterMachineRequestStatusSpecStage.UNKNOWN },
+                  ]),
                 },
                 metadata: {
                   id: faker.string.uuid(),

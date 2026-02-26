@@ -220,11 +220,11 @@ const sectionHeadingId = useId()
     <AccordionHeader class="col-span-full grid grid-cols-subgrid items-center p-2 pr-4 text-xs">
       <AccordionTrigger
         :id="sectionHeadingId"
-        class="group flex items-stretch gap-0.5 truncate text-left"
+        class="group/accordion flex items-stretch gap-0.5 truncate text-left"
       >
         <div class="flex shrink-0 items-center rounded-l bg-naturals-n4 px-0.5">
           <TIcon
-            class="size-5 transition-transform duration-250 group-data-[state=open]:rotate-180"
+            class="size-5 transition-transform duration-250 group-data-[state=open]/accordion:rotate-180"
             icon="drop-up"
             aria-hidden="true"
           />

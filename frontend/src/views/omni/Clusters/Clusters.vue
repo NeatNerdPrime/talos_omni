@@ -18,8 +18,7 @@ import {
   LabelsCompletionType,
   VirtualNamespace,
 } from '@/api/resources'
-import type { WatchOptions } from '@/api/watch'
-import { itemID } from '@/api/watch'
+import { itemID, type WatchOptions } from '@/api/watch'
 import TButton from '@/components/common/Button/TButton.vue'
 import TList from '@/components/common/List/TList.vue'
 import PageHeader from '@/components/common/PageHeader.vue'
@@ -143,7 +142,7 @@ const filterOptions = [
             <div class="pl-6">Name</div>
             <div>Machines Healthy</div>
             <div>Phase</div>
-            <div>Labels</div>
+            <div>Versions</div>
             <div>Actions</div>
           </div>
 

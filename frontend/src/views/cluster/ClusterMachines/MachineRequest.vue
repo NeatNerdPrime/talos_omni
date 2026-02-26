@@ -55,7 +55,7 @@ const stage = computed(() => {
 
     <TStatus :title="stage" />
 
-    <div class="text-naturals-N11 truncate text-xs" :title="requestStatus.spec.status">
+    <div class="truncate text-xs" :title="requestStatus.spec.status">
       {{ requestStatus.spec.status }}
     </div>
   </div>
