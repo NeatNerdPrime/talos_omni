@@ -299,7 +299,7 @@ const openPatchCreate = () => {
               <IconButton
                 :disabled="!canManageConfigPatches"
                 icon="delete"
-                class="absolute top-0 right-3 bottom-0 m-auto h-4 w-4"
+                class="absolute top-0 right-3 bottom-0 m-auto"
                 @click.stop="
                   () => {
                     $router.push({ query: { modal: 'configPatchDestroy', id: item.id } })

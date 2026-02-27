@@ -463,7 +463,7 @@ const submit = async () => {
               </div>
               <div v-if="i !== conditions.length - 1">OR</div>
             </template>
-            <IconButton icon="plus" class="h-full" @click="addCondition" />
+            <IconButton icon="plus" @click="addCondition" />
           </div>
           <div class="flex flex-col gap-1 text-xs">
             <p>

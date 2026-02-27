@@ -133,7 +133,6 @@ const updateLock = async () => {
       >
         <IconButton
           :icon="locked ? (lockedUpdate ? 'locked-toggle' : 'locked') : 'unlocked'"
-          class="mt-0.5 h-4 w-4"
           @click.stop="updateLock"
         />
       </Tooltip>
