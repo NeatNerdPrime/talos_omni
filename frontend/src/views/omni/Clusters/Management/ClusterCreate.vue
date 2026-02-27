@@ -55,6 +55,7 @@ import ClusterWorkloadProxyingCheckbox from '@/views/omni/Clusters/ClusterWorklo
 import EmbeddedDiscoveryServiceCheckbox from '@/views/omni/Clusters/EmbeddedDiscoveryServiceCheckbox.vue'
 import ClusterMachineItem from '@/views/omni/Clusters/Management/ClusterMachineItem.vue'
 import ItemLabels from '@/views/omni/ItemLabels/ItemLabels.vue'
+import AddingMachinesTutorial from '@/views/omni/Machines/components/AddingMachinesTutorial.vue'
 import ConfigPatchEdit from '@/views/omni/Modals/ConfigPatchEdit.vue'
 import UntaintSingleNode from '@/views/omni/Modals/UntaintSingleNode.vue'
 
@@ -429,6 +430,8 @@ const list = useTemplateRef('list')
           <TAlert v-if="!$slots.norecords" type="info" title="No Machines Available">
             Machine is available when it is connected, not allocated and is reporting Talos events.
           </TAlert>
+
+          <AddingMachinesTutorial class="mt-4" />
         </template>
         <template #default="{ items, searchQuery }">
           <ClusterMachineItem

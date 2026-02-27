@@ -22,8 +22,8 @@ const isDismissed = useLocalStorage('_home_clusters_tutorial_dismissed', false)
       <h2 class="text-sm font-medium text-naturals-n14">Getting Started: Clusters</h2>
     </header>
 
-    <div class="space-y-2">
-      <p class="text-xs">
+    <div class="space-y-4 text-xs font-medium">
+      <p>
         Read
         <a
           class="link-primary"
@@ -36,7 +36,7 @@ const isDismissed = useLocalStorage('_home_clusters_tutorial_dismissed', false)
         usage reference.
       </p>
 
-      <p class="text-xs">
+      <p>
         Read
         <a
           class="link-primary"

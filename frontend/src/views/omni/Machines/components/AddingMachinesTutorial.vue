@@ -8,9 +8,20 @@ included in the LICENSE file.
 import { useLocalStorage } from '@vueuse/core'
 
 import TButton from '@/components/common/Button/TButton.vue'
+import CodeBlock from '@/components/common/CodeBlock/CodeBlock.vue'
 import { getDocsLink } from '@/methods'
 
-const isDismissed = useLocalStorage('_home_machines_tutorial_dismissed', false)
+const isDismissed = useLocalStorage('_add_first_machine_tutorial_dismissed', false)
+
+const awsCode = `aws ec2 run-instances \\
+    --image-id $(aws ec2 describe-images --owners 540036508848     --filters "Name=architecture,Values=x86_64"     --query 'Images | sort_by(@, &CreationDate) | reverse(@) | [?!contains(Name, \`beta\`) && !contains(Name, \`alpha\`) && !contains(Name, \`Beta\`) && !contains(Name, \`Alpha\`)] | [0].[ImageId]'     --output text) \\
+    --count 1 \\
+    --instance-type t3.small   \\
+    --associate-public-ip-address \\
+    --user-data "$(omnictl jointoken machine-config)"`
+
+const pxeBootCode =
+  'docker run -t --network host ghcr.io/siderolabs/booter:v0.3.0 -k "$(omnictl jointoken kernel-args)"'
 </script>
 
 <template>
@@ -24,6 +35,22 @@ const isDismissed = useLocalStorage('_home_machines_tutorial_dismissed', false)
 
     <div class="space-y-4 text-xs font-medium">
       <p>To add your first machine create Installation Media and put it onto your machine.</p>
+
+      <div class="space-y-2">
+        <p>Local testing</p>
+        <CodeBlock
+          code="talosctl cluster create qemu --omni-api-endpoint $(omnictl jointoken omni-endpoint) --workers 0 --controlplanes 3"
+        ></CodeBlock>
+
+        <p>AWS</p>
+        <CodeBlock :code="awsCode"></CodeBlock>
+
+        <p>PXE boot</p>
+        <CodeBlock :code="pxeBootCode"></CodeBlock>
+
+        <p>Download ISO</p>
+        <CodeBlock code="omnictl download iso --arch amd64"></CodeBlock>
+      </div>
 
       <p>
         Read

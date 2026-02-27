@@ -308,7 +308,7 @@ const openPage = (page: number | string) => {
 
 <template>
   <div class="flex h-full gap-2 overflow-hidden">
-    <div class="flex grow flex-col gap-2">
+    <div class="flex max-w-full grow flex-col gap-2">
       <slot
         name="header"
         :items-count="total"

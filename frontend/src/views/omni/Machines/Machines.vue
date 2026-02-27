@@ -39,6 +39,7 @@ import { addLabel, selectors as labelsToSelectors } from '@/methods/labels'
 import { MachineFilterOption } from '@/methods/machine'
 import { useResourceWatch } from '@/methods/useResourceWatch'
 import LabelsInput from '@/views/omni/ItemLabels/LabelsInput.vue'
+import AddingMachinesTutorial from '@/views/omni/Machines/components/AddingMachinesTutorial.vue'
 import MachineDetailsPanel from '@/views/omni/Machines/MachineDetailsPanel.vue'
 import MachineItem from '@/views/omni/Machines/MachineItem.vue'
 
@@ -194,6 +195,8 @@ function updateSelected(machine: Resource<MachineStatusLinkSpec>, v?: boolean) {
           No entries of the requested resource type are found on the server.
         </div>
       </TAlert>
+
+      <AddingMachinesTutorial class="mt-4" />
     </template>
 
     <template #header="{ itemsCount, filtered }">
