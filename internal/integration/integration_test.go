@@ -477,7 +477,7 @@ func runOmni(t *testing.T) (string, error) {
 		return "", fmt.Errorf("failed to parse config schema: %w", err)
 	}
 
-	config, err := config.Init(logger, configSchema, params)
+	config, err := config.Init(configSchema, params)
 	if err != nil {
 		return "", err
 	}

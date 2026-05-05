@@ -27,6 +27,7 @@ import (
 	"github.com/siderolabs/omni/client/api/omni/specs"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/internal/backend/dns"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/backend/runtime"
 	"github.com/siderolabs/omni/internal/backend/runtime/kubernetes"
 	omniruntime "github.com/siderolabs/omni/internal/backend/runtime/omni"
@@ -95,7 +96,7 @@ func (suite *OmniRuntimeSuite) SetupTest() {
 
 	suite.runtime, err = omniruntime.NewRuntime(config.Default(), clientFactory, dnsService, workloadProxyReconciler, nil,
 		nil, nil, nil, nil, mockState, prometheus.NewRegistry(),
-		discoveryClientCache, kubernetesRuntime, nil, logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)))
+		discoveryClientCache, kubernetesRuntime, nil, logging.IncreaseLevel(logger, zap.InfoLevel))
 
 	suite.Require().NoError(err)
 

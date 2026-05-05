@@ -35,6 +35,7 @@ import (
 	"github.com/siderolabs/omni/client/pkg/omni/resources/infra"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	siderolinkres "github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	omniruntime "github.com/siderolabs/omni/internal/backend/runtime/omni"
 	omnictrl "github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni"
 	"github.com/siderolabs/omni/internal/pkg/config"
@@ -91,7 +92,7 @@ func TestProvision(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(ctx)
 
-		runtime, err := runtime.NewRuntime(state, logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)), omniruntime.RuntimeCacheOptions()...)
+		runtime, err := runtime.NewRuntime(state, logging.IncreaseLevel(logger, zap.InfoLevel), omniruntime.RuntimeCacheOptions()...)
 		require.NoError(t, err)
 
 		peers := siderolink.NewPeersPool(logger, &fakeWireguardHandler{peers: map[string]wgtypes.Peer{}})

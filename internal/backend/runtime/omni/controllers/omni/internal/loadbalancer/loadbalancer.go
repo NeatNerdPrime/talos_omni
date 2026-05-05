@@ -11,6 +11,7 @@ import (
 	"github.com/siderolabs/go-loadbalancer/upstream"
 	"go.uber.org/zap"
 
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/pkg/config"
 )
 
@@ -26,10 +27,12 @@ type NewFunc func(bindAddress string, bindPort int, logger *zap.Logger, lbConfig
 
 // DefaultNew returns a new load balancer with default settings.
 func DefaultNew(bindAddress string, bindPort int, logger *zap.Logger, lbConfig config.LoadBalancerService) (LoadBalancer, error) { //nolint:ireturn
+	logger.Level()
+
 	return controlplane.NewLoadBalancer(
 		bindAddress,
 		bindPort,
-		logger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel)), // silence the load balancer logs
+		logging.IncreaseLevel(logger, zap.ErrorLevel), // silence the load balancer logs
 		controlplane.WithDialTimeout(lbConfig.GetDialTimeout()),
 		controlplane.WithKeepAlivePeriod(lbConfig.GetKeepAlivePeriod()),
 		controlplane.WithTCPUserTimeout(lbConfig.GetTcpUserTimeout()),

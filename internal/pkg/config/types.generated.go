@@ -361,6 +361,15 @@ type Logs struct {
 	// Audit contains audit logs configuration.
 	Audit LogsAudit `json:"audit" yaml:"audit"`
 
+	// Format is the log format for the Omni application logger. text uses a
+	// human-readable colored format (development), json uses structured JSON output
+	// (production). Defaults to text for debug builds, json otherwise.
+	Format *LogsFormat `json:"format,omitempty,omitzero" yaml:"format,omitempty"`
+
+	// Level is the log level for the Omni application logger. Defaults to info,
+	// unless the --debug flag is set, in which case it defaults to debug.
+	Level *LogsLevel `json:"level,omitempty,omitzero" yaml:"level,omitempty"`
+
 	// Machine contains machine logs configuration.
 	Machine LogsMachine `json:"machine" yaml:"machine"`
 
@@ -394,6 +403,18 @@ type LogsAudit struct {
 	// SqliteTimeout is the timeout for SQLite operations used for audit logs storage.
 	SqliteTimeout *time.Duration `json:"sqliteTimeout,omitempty,omitzero" yaml:"sqliteTimeout,omitempty"`
 }
+
+type LogsFormat string
+
+const LogsFormatJson LogsFormat = "json"
+const LogsFormatText LogsFormat = "text"
+
+type LogsLevel string
+
+const LogsLevelDebug LogsLevel = "debug"
+const LogsLevelError LogsLevel = "error"
+const LogsLevelInfo LogsLevel = "info"
+const LogsLevelWarn LogsLevel = "warn"
 
 type LogsMachine struct {
 	// Storage contains configuration for machine logs storage.

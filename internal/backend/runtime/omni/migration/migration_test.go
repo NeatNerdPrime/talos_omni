@@ -28,6 +28,7 @@ import (
 	authres "github.com/siderolabs/omni/client/pkg/omni/resources/auth"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	omnictrl "github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni/clustermachine"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/migration"
@@ -46,7 +47,7 @@ func (suite *MigrationSuite) SetupTest() {
 
 	suite.logger = zaptest.NewLogger(suite.T())
 
-	suite.manager = migration.NewManager(suite.state, suite.logger.WithOptions(zap.IncreaseLevel(zapcore.WarnLevel)))
+	suite.manager = migration.NewManager(suite.state, logging.IncreaseLevel(suite.logger, zapcore.WarnLevel))
 }
 
 func (suite *MigrationSuite) TestMoveClusterTaintFromResourceToLabel() {

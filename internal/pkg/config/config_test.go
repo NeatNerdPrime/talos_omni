@@ -21,7 +21,6 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/internal/pkg/config"
@@ -60,7 +59,7 @@ func TestMergeConfig(t *testing.T) {
 	configSchema, parseErr := config.ParseSchema()
 	require.NoError(t, parseErr)
 
-	cfg, err := config.Init(zaptest.NewLogger(t), configSchema, params)
+	cfg, err := config.Init(configSchema, params)
 
 	require.NoError(t, err)
 	assert.True(t, cfg.Services.EmbeddedDiscoveryService.GetEnabled())

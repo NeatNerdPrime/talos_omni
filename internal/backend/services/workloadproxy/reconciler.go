@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/backend/workloadproxy/lb"
 )
 
@@ -61,7 +62,7 @@ func NewReconciler(logger *zap.Logger, logLevel zapcore.Level, lazyStopAfter tim
 		clusterToAliasToLB: map[resource.ID]map[string]loadBalancer{},
 		aliasToCluster:     map[string]resource.ID{},
 		logger:             logger,
-		lbLogger:           logger.WithOptions(zap.IncreaseLevel(zapcore.ErrorLevel)),
+		lbLogger:           logging.IncreaseLevel(logger, zapcore.ErrorLevel),
 		logLevel:           logLevel,
 		proxyDialer: &net.Dialer{
 			Timeout:   30 * time.Second,

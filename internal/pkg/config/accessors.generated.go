@@ -776,6 +776,28 @@ func (s *LocalResourceService) SetPort(v int) {
 	s.Port = &v
 }
 
+func (s *Logs) GetFormat() LogsFormat {
+	if s == nil || s.Format == nil {
+		return *new(LogsFormat)
+	}
+	return *s.Format
+}
+
+func (s *Logs) SetFormat(v LogsFormat) {
+	s.Format = &v
+}
+
+func (s *Logs) GetLevel() LogsLevel {
+	if s == nil || s.Level == nil {
+		return *new(LogsLevel)
+	}
+	return *s.Level
+}
+
+func (s *Logs) SetLevel(v LogsLevel) {
+	s.Level = &v
+}
+
 func (s *LogsAudit) GetCleanupProbability() float64 {
 	if s == nil || s.CleanupProbability == nil {
 		return *new(float64)

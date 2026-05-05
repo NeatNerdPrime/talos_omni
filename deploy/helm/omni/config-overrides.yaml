@@ -71,6 +71,9 @@ examples:
     initialUsers:
       - initial-user-1@example.com
       - initial-user-2@example.com
+  logs:
+    level: info
+    format: json
 
 comments:
   account:

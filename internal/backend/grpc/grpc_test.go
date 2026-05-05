@@ -103,7 +103,7 @@ func (suite *GrpcSuite) SetupTest() {
 	suite.runtime, err = omniruntime.NewRuntime(
 		config.Default(), clientFactory, dnsService, workloadProxyReconciler, nil,
 		imageFactoryClient, nil, nil, nil, st,
-		prometheus.NewRegistry(), discoveryClientCache, kubernetesRuntime, nil, logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)),
+		prometheus.NewRegistry(), discoveryClientCache, kubernetesRuntime, nil, logging.IncreaseLevel(logger, zap.InfoLevel),
 	)
 	suite.Require().NoError(err)
 

@@ -47,6 +47,7 @@ import (
 	"github.com/siderolabs/omni/client/api/omni/specs"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/backend/runtime/kubernetes"
 	omniruntime "github.com/siderolabs/omni/internal/backend/runtime/omni"
 	"github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/testutils"
@@ -366,7 +367,7 @@ func (suite *OmniSuite) SetupTest() {
 
 	logger := zaptest.NewLogger(suite.T())
 
-	suite.runtime, err = runtime.NewRuntime(suite.state, logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)), omniruntime.RuntimeCacheOptions()...)
+	suite.runtime, err = runtime.NewRuntime(suite.state, logging.IncreaseLevel(logger, zap.InfoLevel), omniruntime.RuntimeCacheOptions()...)
 	suite.Require().NoError(err)
 
 	suite.cachedState = state.WrapCore(suite.runtime.CachedState())

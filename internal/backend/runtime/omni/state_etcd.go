@@ -167,10 +167,8 @@ func getEtcdState(params *config.EtcdParams, logger *zap.Logger) (EtcdState, err
 
 // getEmbeddedEtcdState runs the embedded etcd and creates a client for it.
 func getEmbeddedEtcdState(params *config.EtcdParams, logger *zap.Logger) (EtcdState, error) {
-	logger = logger.WithOptions(
-		// never enable debug logs for etcd, they are too chatty
-		zap.IncreaseLevel(zap.InfoLevel),
-	).With(logging.Component("embedded_etcd"))
+	// never enable debug logs for etcd, they are too chatty
+	logger = logging.IncreaseLevel(logger, zap.InfoLevel).With(logging.Component("embedded_etcd"))
 
 	embeddedDBPath := params.GetEmbeddedDBPath()
 	logger.Info("starting embedded etcd server", zap.String("data_dir", embeddedDBPath))
@@ -248,10 +246,8 @@ func getEmbeddedEtcdState(params *config.EtcdParams, logger *zap.Logger) (EtcdSt
 			grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(constants.GRPCMaxMessageSize)),
 			grpc.WithSharedWriteBuffer(true),
 		},
-		Logger: logger.WithOptions(
-			// never enable debug logs for etcd client, they are too chatty
-			zap.IncreaseLevel(zap.InfoLevel),
-		).With(logging.Component("etcd_client")),
+		// never enable debug logs for etcd client, they are too chatty
+		Logger: logging.IncreaseLevel(logger, zap.InfoLevel).With(logging.Component("etcd_client")),
 	})
 	if err != nil {
 		embeddedServer.Close()
@@ -306,10 +302,8 @@ func getExternalEtcdState(params *config.EtcdParams, logger *zap.Logger) (EtcdSt
 			grpc.WithSharedWriteBuffer(true),
 		},
 		TLS: tlsConfig,
-		Logger: logger.WithOptions(
-			// never enable debug logs for etcd client, they are too chatty
-			zap.IncreaseLevel(zap.InfoLevel),
-		).With(logging.Component("etcd_client")),
+		// never enable debug logs for etcd client, they are too chatty
+		Logger: logging.IncreaseLevel(logger, zap.InfoLevel).With(logging.Component("etcd_client")),
 	})
 	if err != nil {
 		return nil, err

@@ -1053,6 +1053,24 @@
         "stripe"
       ],
       "properties": {
+        "level": {
+          "description": "Level is the log level for the Omni application logger. Defaults to info, unless the --debug flag is set, in which case it defaults to debug.",
+          "x-cli-flag": "log-level",
+          "type": "string",
+          "enum": ["debug", "info", "warn", "error"],
+          "goJSONSchema": {
+            "pointer": true
+          }
+        },
+        "format": {
+          "description": "Format is the log format for the Omni application logger. text uses a human-readable colored format (development), json uses structured JSON output (production). Defaults to text for debug builds, json otherwise.",
+          "x-cli-flag": "log-format",
+          "type": "string",
+          "enum": ["text", "json"],
+          "goJSONSchema": {
+            "pointer": true
+          }
+        },
         "machine": {
           "description": "Machine contains machine logs configuration.",
           "$ref": "#/definitions/LogsMachine"

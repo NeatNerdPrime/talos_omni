@@ -347,6 +347,13 @@ config:
   # @ignored
   # Logs contains logging-related configuration.
   logs:
+    # Level is the log level for the Omni application logger. Defaults to info, unless the --debug flag is set, in
+    # which case it defaults to debug.
+    #level: info
+    # Format is the log format for the Omni application logger. text uses a human-readable colored format
+    # (development), json uses structured JSON output (production). Defaults to text for debug builds, json
+    # otherwise.
+    #format: json
     # Machine contains machine logs configuration.
     machine:
       # Storage contains configuration for machine logs storage.

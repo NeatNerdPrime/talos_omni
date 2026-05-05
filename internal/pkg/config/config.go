@@ -21,7 +21,6 @@ import (
 	"github.com/cosi-project/runtime/pkg/state"
 	"github.com/siderolabs/gen/xyaml"
 	"github.com/siderolabs/talos/pkg/machinery/config/merge"
-	"go.uber.org/zap"
 	"go.yaml.in/yaml/v4"
 
 	"github.com/siderolabs/omni/client/pkg/compression"
@@ -110,7 +109,7 @@ func Default() *Params {
 }
 
 // Init the config using defaults, merge with overrides, populate fallbacks and validate.
-func Init(logger *zap.Logger, schema *jsonschema.Schema, params ...*Params) (*Params, error) {
+func Init(schema *jsonschema.Schema, params ...*Params) (*Params, error) {
 	config, err := LoadDefault()
 	if err != nil {
 		return nil, err
@@ -132,8 +131,6 @@ func Init(logger *zap.Logger, schema *jsonschema.Schema, params ...*Params) (*Pa
 	if err := compression.InitConfig(enableCompression); err != nil {
 		return nil, err
 	}
-
-	logger.Info("initialized resource compression config", zap.Bool("enabled", enableCompression))
 
 	return config, nil
 }

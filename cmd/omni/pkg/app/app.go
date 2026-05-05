@@ -64,7 +64,7 @@ func Run(ctx context.Context, state *omni.State, cfg *config.Params, logger *zap
 
 	logger.Debug("using config", zap.Any("config", cfg))
 
-	klog.SetLogger(zapr.NewLogger(logger.WithOptions(zap.IncreaseLevel(zapcore.WarnLevel)).With(logging.Component("kubernetes"))))
+	klog.SetLogger(zapr.NewLogger(logging.IncreaseLevel(logger, zapcore.WarnLevel).With(logging.Component("kubernetes"))))
 
 	ctx = actor.MarkContextAsInternalActor(ctx)
 

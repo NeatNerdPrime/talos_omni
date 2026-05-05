@@ -62,27 +62,30 @@ func buildRootCommand() (*cobra.Command, error) {
 				return fmt.Errorf("failed to bind flags: %w", err)
 			}
 
-			var loggerConfig zap.Config
+			configs := make([]*config.Params, 0, len(configPaths)+1)
 
-			if constants.IsDebugBuild {
-				loggerConfig = zap.NewDevelopmentConfig()
-				loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-			} else {
-				loggerConfig = zap.NewProductionConfig()
+			for _, configPath := range configPaths {
+				fileConfig, err := config.LoadFromFile(configPath)
+				if err != nil {
+					return fmt.Errorf("failed to load config from file %q: %w", configPath, err)
+				}
+
+				configs = append(configs, fileConfig)
 			}
 
-			if !debug {
-				loggerConfig.Level.SetLevel(zap.InfoLevel)
-			} else {
-				loggerConfig.Level.SetLevel(zap.DebugLevel)
+			configs = append(configs, flagConfig) // flags have the highest priority
+
+			cfg, err := config.Init(configSchema, configs...)
+			if err != nil {
+				return err
 			}
 
-			logger, err := loggerConfig.Build(
-				zap.AddStacktrace(zapcore.FatalLevel), // only print stack traces for fatal errors
-			)
+			logger, err := buildLogger(cfg.Logs, debug)
 			if err != nil {
 				return fmt.Errorf("failed to set up logging: %w", err)
 			}
+
+			logger.Info("initialized resource compression config", zap.Bool("enabled", cfg.Features.GetEnableConfigDataCompression()))
 
 			signals := make(chan os.Signal, 1)
 
@@ -100,28 +103,9 @@ func buildRootCommand() (*cobra.Command, error) {
 				cancel()
 			}, logger)
 
-			configs := make([]*config.Params, 0, len(configPaths)+1)
-
-			for _, configPath := range configPaths {
-				var fileConfig *config.Params
-
-				if fileConfig, err = config.LoadFromFile(configPath); err != nil {
-					return fmt.Errorf("failed to load config from file %q: %w", configPath, err)
-				}
-
-				configs = append(configs, fileConfig)
-			}
-
-			configs = append(configs, flagConfig) // flags have the highest priority
-
-			config, err := config.Init(logger, configSchema, configs...)
-			if err != nil {
-				return err
-			}
-
 			ctx = actor.MarkContextAsInternalActor(ctx)
 
-			state, err := omni.NewState(ctx, config, logger, prometheus.DefaultRegisterer)
+			state, err := omni.NewState(ctx, cfg, logger, prometheus.DefaultRegisterer)
 			if err != nil {
 				return err
 			}
@@ -132,7 +116,7 @@ func buildRootCommand() (*cobra.Command, error) {
 				}
 			}()
 
-			if err = config.ValidateState(ctx, state.Default()); err != nil {
+			if err = cfg.ValidateState(ctx, state.Default()); err != nil {
 				return err
 			}
 
@@ -140,7 +124,7 @@ func buildRootCommand() (*cobra.Command, error) {
 				logger.Warn("running debug build")
 			}
 
-			return app.Run(ctx, state, config, logger)
+			return app.Run(ctx, state, cfg, logger)
 		},
 	}
 
@@ -148,6 +132,8 @@ func buildRootCommand() (*cobra.Command, error) {
 
 	rootCmd.Flags().StringArrayVar(&configPaths, "config-path", nil, "config file(s) to load, can be specified multiple times, merged in order (flags have highest priority)")
 	rootCmd.Flags().BoolVar(&debug, "debug", constants.IsDebugBuild, "enable debug logs.")
+
+	rootCmd.Flags().MarkDeprecated("debug", "use --log-level debug") //nolint:errcheck
 
 	rootCmdFlagBinder.StringVar("account.id", &flagConfig.Account.Id)
 	rootCmdFlagBinder.StringVar("account.name", &flagConfig.Account.Name)
@@ -279,6 +265,9 @@ func defineAuthFlags(rootCmd *cobra.Command, b *FlagBinder, flagConfig *config.P
 }
 
 func defineLogsFlags(rootCmd *cobra.Command, b *FlagBinder, flagConfig *config.Params) error {
+	EnumVar(b, "logs.level", &flagConfig.Logs.Level)
+	EnumVar(b, "logs.format", &flagConfig.Logs.Format)
+
 	b.DurationVar("logs.machine.storage.sqliteTimeout", &flagConfig.Logs.Machine.Storage.SqliteTimeout)
 	b.DurationVar("logs.machine.storage.cleanupInterval", &flagConfig.Logs.Machine.Storage.CleanupInterval)
 	b.DurationVar("logs.machine.storage.cleanupOlderThan", &flagConfig.Logs.Machine.Storage.CleanupOlderThan)
@@ -388,4 +377,36 @@ func defineEulaFlags(rootCmd *cobra.Command, b *FlagBinder, flagConfig *config.P
 	b.StringVar("eulaAccept.email", &flagConfig.EulaAccept.Email)
 
 	rootCmd.MarkFlagsRequiredTogether(b.mustFlagName("eulaAccept.name"), b.mustFlagName("eulaAccept.email"))
+}
+
+func buildLogger(logs config.Logs, debug bool) (*zap.Logger, error) {
+	useTextFormat := constants.IsDebugBuild
+	if logs.Format != nil {
+		useTextFormat = *logs.Format == config.LogsFormatText
+	}
+
+	var loggerConfig zap.Config
+
+	if useTextFormat {
+		loggerConfig = zap.NewDevelopmentConfig()
+		loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	} else {
+		loggerConfig = zap.NewProductionConfig()
+	}
+
+	switch {
+	case logs.Level != nil:
+		var level zapcore.Level
+		if err := level.UnmarshalText([]byte(*logs.Level)); err != nil {
+			return nil, fmt.Errorf("invalid log level %q: %w", *logs.Level, err)
+		}
+
+		loggerConfig.Level.SetLevel(level)
+	case debug:
+		loggerConfig.Level.SetLevel(zap.DebugLevel)
+	default:
+		loggerConfig.Level.SetLevel(zap.InfoLevel)
+	}
+
+	return loggerConfig.Build(zap.AddStacktrace(zapcore.FatalLevel)) // only print stack traces for fatal errors
 }

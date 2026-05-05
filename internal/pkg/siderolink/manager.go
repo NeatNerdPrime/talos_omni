@@ -42,6 +42,7 @@ import (
 	"github.com/siderolabs/omni/client/pkg/constants"
 	"github.com/siderolabs/omni/client/pkg/jointoken"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/siderolink"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/pkg/config"
 	"github.com/siderolabs/omni/internal/pkg/errgroup"
 	"github.com/siderolabs/omni/internal/pkg/grpcutil"
@@ -245,7 +246,7 @@ func createListener(ctx context.Context, host, port string) (net.Listener, error
 func (manager *Manager) Register(server *grpc.Server) {
 	pb.RegisterProvisionServiceServer(server, manager.provisionServer)
 	pb.RegisterWireGuardOverGRPCServiceServer(server,
-		wggrpc.NewService(manager.peerTraffic, manager.allowedPeers, manager.logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel))))
+		wggrpc.NewService(manager.peerTraffic, manager.allowedPeers, logging.IncreaseLevel(manager.logger, zap.InfoLevel)))
 }
 
 // Run implements controller.Manager interface.
@@ -487,7 +488,7 @@ func (manager *Manager) startWireguard(ctx context.Context, eg *errgroup.Group, 
 			}
 		}()
 
-		return manager.wgHandler.Run(ctx, manager.logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)))
+		return manager.wgHandler.Run(ctx, logging.IncreaseLevel(manager.logger, zap.InfoLevel))
 	})
 
 	return nil

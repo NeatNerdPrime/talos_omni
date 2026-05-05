@@ -40,6 +40,7 @@ import (
 	managementclient "github.com/siderolabs/omni/client/pkg/client/management"
 	"github.com/siderolabs/omni/client/pkg/omni/resources/omni"
 	grpcomni "github.com/siderolabs/omni/internal/backend/grpc"
+	"github.com/siderolabs/omni/internal/backend/logging"
 	"github.com/siderolabs/omni/internal/backend/runtime/kubernetes"
 	omniruntime "github.com/siderolabs/omni/internal/backend/runtime/omni"
 	omnictrl "github.com/siderolabs/omni/internal/backend/runtime/omni/controllers/omni"
@@ -64,7 +65,7 @@ func TestGenerateConfigs(t *testing.T) {
 
 	rt, err := omniruntime.NewRuntime(config.Default(), nil, nil, nil,
 		nil, nil, nil, nil, nil, st, prometheus.NewRegistry(),
-		nil, kubernetesRuntime, nil, logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel)))
+		nil, kubernetesRuntime, nil, logging.IncreaseLevel(logger, zap.InfoLevel))
 	require.NoError(t, err)
 
 	clusterName := "cluster1"
