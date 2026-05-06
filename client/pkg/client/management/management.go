@@ -154,6 +154,15 @@ func (client *Client) CreateSchematic(ctx context.Context, req *management.Creat
 	return schematic, nil
 }
 
+// CreateSchematicFromRaw creates a schematic from the raw schematic string using the image factory.
+func (client *Client) CreateSchematicFromRaw(ctx context.Context, schematic []byte) (*management.CreateSchematicResponse, error) {
+	req := &management.CreateSchematicFromRawRequest{
+		RawSchematic: schematic,
+	}
+
+	return client.conn.CreateSchematicFromRaw(ctx, req)
+}
+
 // CreateServiceAccount creates a service account and returns the public key ID.
 func (client *Client) CreateServiceAccount(ctx context.Context, name, armoredPGPPublicKey, role string, useUserRole bool) (string, error) {
 	resp, err := client.conn.CreateServiceAccount(ctx, &management.CreateServiceAccountRequest{
