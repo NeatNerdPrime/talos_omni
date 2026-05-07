@@ -7,7 +7,6 @@ included in the LICENSE file.
 <script setup lang="ts">
 import { useClipboard } from '@vueuse/core'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { Runtime } from '@/api/common/omni.pb'
 import { type Resource, ResourceService } from '@/api/grpc'
@@ -25,6 +24,7 @@ import TActionsBoxItem from '@/components/ActionsBox/TActionsBoxItem.vue'
 import TButton from '@/components/Button/TButton.vue'
 import TList from '@/components/List/TList.vue'
 import TListItem from '@/components/List/TListItem.vue'
+import JoinTokenCreate from '@/components/Modals/JoinTokenCreate.vue'
 import JoinTokenDelete from '@/components/Modals/JoinTokenDelete.vue'
 import JoinTokenRevoke from '@/components/Modals/JoinTokenRevoke.vue'
 import PageContainer from '@/components/PageContainer/PageContainer.vue'
@@ -38,11 +38,11 @@ import { showError } from '@/notification'
 
 definePage({ name: 'JoinTokens' })
 
-const router = useRouter()
 const { copy } = useClipboard()
 const { canManageJoinTokens, canReadJoinTokens } = usePermissions()
 
 const showTokens = ref(false)
+const createTokenModalOpen = ref(false)
 const revokeTokenModalOpen = ref(false)
 const deleteTokenModalOpen = ref(false)
 const selectedToken = ref<string>()
@@ -68,12 +68,6 @@ const getStatusString = (state: JoinTokenStatusSpecState): TCommonStatuses => {
   }
 
   return TCommonStatuses.UNKNOWN
-}
-
-const openUserCreate = () => {
-  router.push({
-    query: { modal: 'joinTokenCreate' },
-  })
 }
 
 const copyValue = (value: string) => {
@@ -133,7 +127,7 @@ const openDeleteToken = (token: string) => {
         icon-position="left"
         variant="highlighted"
         :disabled="!canManageJoinTokens"
-        @click="openUserCreate"
+        @click="createTokenModalOpen = true"
       >
         Create Join Token
       </TButton>
@@ -176,7 +170,7 @@ const openDeleteToken = (token: string) => {
                 {{ item.spec.use_count ?? 0 }}
               </div>
             </div>
-            <TActionsBox>
+            <TActionsBox aria-label="token actions">
               <template v-if="item.spec.state === JoinTokenStatusSpecState.ACTIVE">
                 <TActionsBoxItem
                   icon="copy"
@@ -240,6 +234,8 @@ const openDeleteToken = (token: string) => {
         </TListItem>
       </template>
     </TList>
+
+    <JoinTokenCreate v-model:open="createTokenModalOpen" />
 
     <JoinTokenRevoke
       v-if="selectedToken"

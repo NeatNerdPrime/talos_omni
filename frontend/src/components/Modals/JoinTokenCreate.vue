@@ -7,16 +7,16 @@ included in the LICENSE file.
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
-import TButton from '@/components/Button/TButton.vue'
 import TButtonGroup from '@/components/Button/TButtonGroup.vue'
+import Modal from '@/components/Modals/Modal.vue'
 import TInput from '@/components/TInput/TInput.vue'
 import { AuthType, authType } from '@/methods'
 import { usePermissions } from '@/methods/auth'
 import { createJoinToken } from '@/methods/user'
 import { showError, showSuccess } from '@/notification'
-import CloseButton from '@/views/Modals/CloseButton.vue'
+
+const open = defineModel<boolean>('open', { default: false })
 
 enum Lifetime {
   NeverExpire = 'Never Expire',
@@ -24,7 +24,6 @@ enum Lifetime {
 }
 
 const expiration = ref(365)
-const router = useRouter()
 const { canManageUsers } = usePermissions()
 
 const lifetime: Ref<string> = ref(Lifetime.NeverExpire)
@@ -49,32 +48,21 @@ const handleCreate = async () => {
     return
   }
 
-  close()
+  open.value = false
 
   showSuccess('Join Token Was Created', undefined)
-}
-
-let closed = false
-
-const close = () => {
-  if (closed) {
-    return
-  }
-
-  closed = true
-
-  router.go(-1)
 }
 </script>
 
 <template>
-  <div class="modal-window">
-    <div class="mb-5 flex items-center justify-between text-xl text-naturals-n14">
-      <h3 class="text-base text-naturals-n14">Create Join Token</h3>
-      <CloseButton @click="close" />
-    </div>
-
-    <div class="mb-4 flex flex-col gap-2">
+  <Modal
+    v-model:open="open"
+    title="Create Join Token"
+    action-label="Create Join Token"
+    :action-disabled="!canManageUsers && authType !== AuthType.SAML"
+    @confirm="handleCreate"
+  >
+    <div class="flex flex-col gap-2">
       <TInput v-model="name" title="Name" class="h-full flex-1" :on-clear="() => (name = '')" />
 
       <div class="flex items-center gap-1 text-xs">
@@ -103,13 +91,5 @@ const close = () => {
         class="flex-1"
       />
     </div>
-
-    <TButton
-      variant="highlighted"
-      :disabled="!canManageUsers && authType !== AuthType.SAML"
-      @click="handleCreate"
-    >
-      Create Join Token
-    </TButton>
-  </div>
+  </Modal>
 </template>
