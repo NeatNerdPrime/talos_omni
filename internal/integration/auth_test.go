@@ -789,6 +789,7 @@ type resourceAuthzTestCase struct {
 	resource              resource.Resource
 	allowedVerbSet        map[state.Verb]struct{}
 	isAdminOnly           bool
+	isOperatorOnly        bool
 	isSignatureSufficient bool
 	isPublic              bool
 	isDestroyNotAllowed   bool
@@ -945,6 +946,7 @@ func AssertResourceAuthz(rootCtx context.Context, rootCli *client.Client, client
 			{
 				resource:       importedClusterSecret,
 				allowedVerbSet: allVerbsSet,
+				isOperatorOnly: true,
 			},
 			{
 				resource:       grpcTunnelConfig,
@@ -1497,6 +1499,8 @@ func AssertResourceAuthz(rootCtx context.Context, rootCli *client.Client, client
 							sufficientRole = true
 						case tc.isAdminOnly:
 							sufficientRole = isAdmin
+						case tc.isOperatorOnly:
+							sufficientRole = isOperator
 						default:
 							if testVerb.Readonly() {
 								sufficientRole = isReader

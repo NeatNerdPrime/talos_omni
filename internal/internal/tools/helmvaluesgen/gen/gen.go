@@ -488,6 +488,7 @@ func parseOmit(node *yaml.Node, prefix string, target map[string]bool) error {
 		return nil
 	}
 
+	//nolint:exhaustive
 	switch node.Kind {
 	case yaml.SequenceNode:
 		for _, item := range node.Content {
@@ -859,6 +860,7 @@ func writeValue(builder *strings.Builder, indent int, commented bool, name strin
 	// The renderer is deliberately manual: yaml.v4 can preserve comments when
 	// parsing, but it cannot emit "commented-out YAML" values in the shape
 	// helm-docs expects for chart documentation.
+	//nolint:exhaustive
 	switch value.Kind {
 	case yaml.SequenceNode:
 		if len(value.Content) == 0 {
