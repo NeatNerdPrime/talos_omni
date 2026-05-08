@@ -381,8 +381,8 @@ const openPage = (page: number | string) => {
               :side-panel-selected-item-id
               :open-panel="
                 (id: string) => {
-                  sidePanelOpen = !sidePanelOpen
-                  sidePanelSelectedItemId = sidePanelOpen ? id : undefined
+                  sidePanelOpen = !sidePanelOpen || sidePanelSelectedItemId !== id
+                  sidePanelSelectedItemId = id
                 }
               "
             />
