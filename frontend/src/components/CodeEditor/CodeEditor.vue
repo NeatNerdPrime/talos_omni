@@ -66,7 +66,9 @@ configureMonacoYaml(monaco, {
   hover: true,
   completion: true,
   validate: true,
-  format: true,
+  format: {
+    enable: true,
+  },
   schemas,
 })
 

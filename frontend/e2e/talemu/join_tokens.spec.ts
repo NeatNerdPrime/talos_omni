@@ -55,7 +55,9 @@ test('Join tokens list read functionality', async ({ page }, testInfo) => {
     await row.getByLabel('token actions').click()
     await page.getByRole('menuitem', { name: 'Copy Token' }).click()
 
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(DEFAULT_TOKEN)
+    await expect
+      .poll(async () => await page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(DEFAULT_TOKEN)
 
     await row.getByLabel('token actions').click()
     await page.getByRole('menuitem', { name: 'Copy Kernel Params' }).click()

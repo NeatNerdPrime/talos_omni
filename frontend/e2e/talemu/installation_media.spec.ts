@@ -105,33 +105,44 @@ test('Download installation media', async ({ page }, testInfo) => {
   await test.step('Confirmation step', async () => {
     await page.getByRole('button', { name: 'Copy schematic ID' }).click()
 
-    schematicId = await page.evaluate(() => navigator.clipboard.readText())
-    expect(schematicId, 'Expect schematic ID to be valid').toMatch(/[a-zA-Z0-9]{64}/)
+    await expect
+      .poll(async () => {
+        schematicId = await page.evaluate(() => navigator.clipboard.readText())
+        return schematicId
+      }, 'Expect schematic ID to be valid')
+      .toMatch(/[a-zA-Z0-9]{64}/)
 
+    // Clearing clipboard before next poll
+    await page.evaluate(() => navigator.clipboard.writeText(''))
     await page.getByRole('button', { name: 'Copy schematic YAML' }).click()
 
-    const schematicYml = await page.evaluate(() => navigator.clipboard.readText())
-    const parsedSchematicYml = load(schematicYml)
-    await testInfo.attach('schematic.yaml', {
-      body: schematicYml,
-      contentType: 'application/yaml',
-    })
+    await expect
+      .poll(async () => {
+        const schematicYml = await page.evaluate(() => navigator.clipboard.readText())
+        const parsedSchematicYml = load(schematicYml)
 
-    expect(parsedSchematicYml, 'Expect YAML to match expected shape').toEqual({
-      customization: {
-        extraKernelArgs: [
-          expect.stringContaining('siderolink.api=grpc://'),
-          expect.stringContaining('talos.events.sink='),
-          expect.stringContaining('talos.logging.kernel='),
-          '-console',
-          'console=tty0',
-        ],
-        meta: [{ key: 12, value: expect.any(String) }],
-        systemExtensions: {
-          officialExtensions: ['siderolabs/hello-world-service'],
+        await testInfo.attach('schematic.yaml', {
+          body: schematicYml,
+          contentType: 'application/yaml',
+        })
+
+        return parsedSchematicYml
+      }, 'Expect YAML to match expected shape')
+      .toEqual({
+        customization: {
+          extraKernelArgs: [
+            expect.stringContaining('siderolink.api=grpc://'),
+            expect.stringContaining('talos.events.sink='),
+            expect.stringContaining('talos.logging.kernel='),
+            '-console',
+            'console=tty0',
+          ],
+          meta: [{ key: 12, value: expect.any(String) }],
+          systemExtensions: {
+            officialExtensions: ['siderolabs/hello-world-service'],
+          },
         },
-      },
-    })
+      })
 
     await expect(
       page.getByText(
@@ -164,10 +175,9 @@ test('Download installation media', async ({ page }, testInfo) => {
     const isoRow = page.getByRole('row', { name: 'SecureBoot ISO' })
     await isoRow.getByLabel('copy link').click()
 
-    const isoLink = await page.evaluate(() => navigator.clipboard.readText())
-    expect(isoLink).toBe(
-      `https://factory.talos.dev/image/${schematicId}/1.12.0/metal-arm64-secureboot.iso`,
-    )
+    await expect
+      .poll(async () => await page.evaluate(() => navigator.clipboard.readText()))
+      .toBe(`https://factory.talos.dev/image/${schematicId}/1.12.0/metal-arm64-secureboot.iso`)
 
     await isoRow.getByLabel('download').click()
 
