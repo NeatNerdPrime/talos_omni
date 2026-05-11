@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"slices"
 
+	"github.com/blang/semver/v4"
 	"github.com/cosi-project/runtime/pkg/safe"
 	"github.com/siderolabs/image-factory/pkg/client"
 	"github.com/siderolabs/image-factory/pkg/schematic"
@@ -126,7 +127,7 @@ func (s *managementServer) CreateSchematic(ctx context.Context, request *managem
 
 // CreateSchematicFromRaw implements managementServer.
 func (s *managementServer) CreateSchematicFromRaw(ctx context.Context, request *management.CreateSchematicFromRawRequest) (*management.CreateSchematicResponse, error) {
-	if _, err := auth.CheckGRPC(ctx, auth.WithValidSignature(true)); err != nil {
+	if _, err := auth.CheckGRPC(ctx, auth.WithExactRoles(role.InfraProvider, role.Operator, role.Admin)); err != nil {
 		return nil, err
 	}
 
@@ -149,6 +150,12 @@ func (s *managementServer) CreateSchematicFromRaw(ctx context.Context, request *
 }
 
 func (s *managementServer) getOverlay(ctx context.Context, req *management.CreateSchematicRequest) (schematic.Overlay, error) {
+	if req.TalosVersion != "" {
+		if _, err := semver.ParseTolerant(req.TalosVersion); err != nil {
+			return schematic.Overlay{}, status.Error(codes.InvalidArgument, "invalid Talos version")
+		}
+	}
+
 	if !quirks.New(req.TalosVersion).SupportsOverlay() {
 		return schematic.Overlay{}, nil
 	}

@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/blang/semver/v4"
 	coidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/cosi-project/runtime/api/v1alpha1"
 	"github.com/cosi-project/runtime/pkg/resource"
@@ -1271,6 +1272,12 @@ func makeTalosctlHandler(imageFactoryClient *imagefactory.Client, logger *zap.Lo
 		}
 
 		talosVersion := r.PathValue("version")
+		if _, err := semver.ParseTolerant(talosVersion); err != nil {
+			logger.Info("invalid Talos version", zap.Error(err))
+			writeResult(result{Status: "invalid Talos version"}, http.StatusBadRequest)
+
+			return
+		}
 
 		actual, _ := cacherMap.LoadOrStore(talosVersion, &cache.Value[[]string]{Duration: time.Hour})
 
