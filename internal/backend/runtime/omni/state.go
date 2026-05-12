@@ -163,7 +163,10 @@ func NewState(ctx context.Context, params *config.Params, logger *zap.Logger, me
 	case config.StorageDefaultKindBoltdb:
 		defaultPersistentState, err = newBoltPersistentState(params.Storage.Default.Boltdb.GetPath(), nil, false, logger)
 	case config.StorageDefaultKindEtcd:
-		defaultPersistentState, err = newEtcdPersistentState(ctx, params, logger)
+		etcdMetrics := newEtcdMetrics()
+		metricsRegistry.MustRegister(etcdMetrics)
+
+		defaultPersistentState, err = newEtcdPersistentState(ctx, params, etcdMetrics.Observe, logger)
 	default:
 		return nil, fmt.Errorf("unknown storage kind %q", params.Storage.Default.GetKind())
 	}

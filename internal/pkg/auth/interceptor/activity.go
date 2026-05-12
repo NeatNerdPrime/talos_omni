@@ -65,7 +65,7 @@ func (a *Activity) Stream() grpc.StreamServerInterceptor {
 }
 
 func (a *Activity) trackActivity(ctx context.Context) {
-	identity := identityFromContext(ctx)
+	identity := auth.IdentityFromContext(ctx)
 	fingerprint := fingerprintFromContext(ctx)
 
 	if identity == "" && fingerprint == "" {
@@ -137,18 +137,6 @@ func (a *Activity) sweepIfNeeded(now time.Time) {
 			return now.Sub(t) <= activityDebounceInterval
 		})
 	}
-}
-
-func identityFromContext(ctx context.Context) string {
-	if val, ok := ctxstore.Value[auth.IdentityContextKey](ctx); ok && val.Identity != "" {
-		return val.Identity
-	}
-
-	if val, ok := ctxstore.Value[auth.VerifiedEmailContextKey](ctx); ok && val.Email != "" {
-		return val.Email
-	}
-
-	return ""
 }
 
 func fingerprintFromContext(ctx context.Context) string {

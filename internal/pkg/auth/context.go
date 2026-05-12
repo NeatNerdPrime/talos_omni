@@ -6,9 +6,12 @@
 package auth
 
 import (
+	"context"
+
 	"github.com/siderolabs/go-api-signature/pkg/message"
 
 	"github.com/siderolabs/omni/internal/pkg/auth/role"
+	"github.com/siderolabs/omni/internal/pkg/ctxstore"
 )
 
 // EnabledAuthContextKey is the context key for enabled authentication.
@@ -31,3 +34,19 @@ type IdentityContextKey struct{ Identity string }
 
 // FingerprintContextKey is the context key for the public key fingerprint used to sign the request.
 type FingerprintContextKey struct{ Fingerprint string }
+
+// IdentityFromContext returns the caller identity, preferring IdentityContextKey (set by signature
+// auth — omnictl, service accounts, infra providers) and falling back to VerifiedEmailContextKey
+// (the only signal set by JWT/SAML interceptors used by the web UI). Returns "" when neither is
+// present or both are empty.
+func IdentityFromContext(ctx context.Context) string {
+	if val, ok := ctxstore.Value[IdentityContextKey](ctx); ok && val.Identity != "" {
+		return val.Identity
+	}
+
+	if val, ok := ctxstore.Value[VerifiedEmailContextKey](ctx); ok && val.Email != "" {
+		return val.Email
+	}
+
+	return ""
+}

@@ -39,7 +39,7 @@ import (
 // compressionThresholdBytes is the minimum marshaled size of the data to be considered for compression.
 const compressionThresholdBytes = 2048
 
-func newEtcdPersistentState(ctx context.Context, params *config.Params, logger *zap.Logger) (state *PersistentState, err error) {
+func newEtcdPersistentState(ctx context.Context, params *config.Params, observer etcd.ObserverFunc, logger *zap.Logger) (state *PersistentState, err error) {
 	accountID := params.Account.GetId()
 	prefix := fmt.Sprintf("/omni/%s", url.PathEscape(accountID))
 
@@ -96,6 +96,7 @@ func newEtcdPersistentState(ctx context.Context, params *config.Params, logger *
 		),
 		etcd.WithKeyPrefix(prefix),
 		etcd.WithSalt(salt[:]),
+		etcd.WithObserver(observer),
 	)
 
 	return &PersistentState{
