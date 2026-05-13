@@ -257,16 +257,12 @@ export function majorMinorVersion(version: string) {
   return `${v.major}.${v.minor}`
 }
 
-export function downloadFile(url: string, filename?: string, target?: string) {
+export function downloadFile(url: string, filename?: string) {
   const a = document.createElement('a')
   a.style.display = 'none'
 
   a.href = url
   if (filename) a.download = filename
-  if (target) {
-    a.target = target
-    if (target === '_blank') a.rel = 'noopener noreferrer'
-  }
 
   document.body.appendChild(a)
   a.click()

@@ -23,15 +23,12 @@ import {
 import IconButton from '@/components/Button/IconButton.vue'
 import TButton from '@/components/Button/TButton.vue'
 import TSelectList from '@/components/SelectList/TSelectList.vue'
-import TSpinner from '@/components/Spinner/TSpinner.vue'
 import TableCell from '@/components/Table/TableCell.vue'
 import TableRoot from '@/components/Table/TableRoot.vue'
 import TableRow from '@/components/Table/TableRow.vue'
 import Tooltip from '@/components/Tooltip/Tooltip.vue'
-import { useDownloadImage } from '@/methods/useDownloadImage'
 import { useResourceGet } from '@/methods/useResourceGet'
 import { useResourceWatch } from '@/methods/useResourceWatch'
-import { showError } from '@/notification'
 import { resolveTalosVersion } from '@/views/InstallationMedia/useFormState'
 import { usePresetDownloadLinks } from '@/views/InstallationMedia/usePresetDownloadLinks'
 import { usePresetSchematic } from '@/views/InstallationMedia/usePresetSchematic'
@@ -154,22 +151,7 @@ const schematicId = computed(() => schematic.value?.id ?? '')
 const { schematic } = usePresetSchematic(resolvedPreset)
 const { links } = usePresetDownloadLinks(schematicId, resolvedPreset)
 
-const {
-  isGenerating: imageIsGenerating,
-  abort: abortImageDownload,
-  download: _downloadImage,
-} = useDownloadImage()
-
-async function downloadImage(url: string) {
-  try {
-    await _downloadImage(url)
-  } catch (error) {
-    showError('Image download failed', error instanceof Error ? error.message : String(error))
-  }
-}
-
 async function close() {
-  abortImageDownload()
   emit('close')
 }
 </script>
@@ -230,12 +212,10 @@ async function close() {
                   <IconButton
                     is="a"
                     :href="link"
-                    :disabled="imageIsGenerating"
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label="download"
                     icon="arrow-down-tray"
-                    @click.prevent="downloadImage(link)"
                   />
                 </Tooltip>
 
@@ -249,11 +229,6 @@ async function close() {
       </TableRoot>
 
       <div class="flex gap-1">
-        <p v-if="imageIsGenerating" class="flex items-center gap-1.5 text-xs">
-          <TSpinner class="size-3" />
-          <span>Generating image...</span>
-        </p>
-
         <div class="grow"></div>
 
         <TButton @click="close">Close</TButton>

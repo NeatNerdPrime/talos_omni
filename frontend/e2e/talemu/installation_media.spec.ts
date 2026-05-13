@@ -179,11 +179,9 @@ test('Download installation media', async ({ page }, testInfo) => {
       .poll(async () => await page.evaluate(() => navigator.clipboard.readText()))
       .toBe(`https://factory.talos.dev/image/${schematicId}/1.12.0/metal-arm64-secureboot.iso`)
 
-    await isoRow.getByLabel('download').click()
-
     const [download] = await Promise.all([
       page.waitForEvent('download'),
-      expect(page.getByText('Generating Image')).toBeVisible(),
+      isoRow.getByLabel('download').click(),
     ])
 
     const filePath = testInfo.outputPath(download.suggestedFilename())
