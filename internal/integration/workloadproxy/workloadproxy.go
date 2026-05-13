@@ -28,6 +28,7 @@ import (
 	"github.com/cosi-project/runtime/pkg/resource"
 	"github.com/cosi-project/runtime/pkg/resource/rtestutils"
 	"github.com/cosi-project/runtime/pkg/safe"
+	"github.com/cosi-project/runtime/pkg/state"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/siderolabs/gen/maps"
 	"github.com/siderolabs/gen/xslices"
@@ -214,7 +215,16 @@ func testToggleKubernetesServiceAnnotation(ctx context.Context, t *testing.T, lo
 	updatedServicesMap := make(map[resource.ID]*omni.ExposedService)
 
 	for _, service := range services {
-		rtestutils.AssertResource[*omni.ExposedService](ctx, t, omniState, service.res.Metadata().ID(), func(r *omni.ExposedService, assertion *assert.Assertions) {
+		// After the delete-readd cycle the reconciler has no pre-existing resource for
+		// this svc, so it always recreates in the new suffixed ID format. The originally
+		// stored ID may be in the legacy bare format (for resources carried over from a
+		// previous Omni release), so we look up by the computed suffix ID rather than
+		// trusting the stored one.
+		legacyID := service.deployment.cluster.clusterID + "/" + service.svc.Name + "." + service.svc.Namespace
+		expectedPort := int(service.res.TypedSpec().Value.Port)
+		suffixID := fmt.Sprintf("%s/%d", legacyID, expectedPort)
+
+		rtestutils.AssertResource[*omni.ExposedService](ctx, t, omniState, suffixID, func(r *omni.ExposedService, assertion *assert.Assertions) {
 			assertion.Equal(service.res.TypedSpec().Value.Port, r.TypedSpec().Value.Port, "exposed service port should be restored after toggling the annotation back on")
 			assertion.Equal(service.res.TypedSpec().Value.Label, r.TypedSpec().Value.Label, "exposed service label should be restored after toggling the annotation back on")
 			assertion.Equal(service.res.TypedSpec().Value.IconBase64, r.TypedSpec().Value.IconBase64, "exposed service icon should be restored after toggling the annotation back on")
@@ -266,7 +276,7 @@ func prepareServices(ctx context.Context, t *testing.T, logger *zap.Logger, omni
 
 		var services []*corev1.Service
 
-		deployment.deployment, services = createKubernetesResources(ctx, t, logger, kubeClient, firstPort, numReplicasPerWorkload, numServicePerWorkload, identifier, iconBase64)
+		deployment.deployment, services = createKubernetesResources(ctx, t, logger, kubeClient, firstPort, numReplicasPerWorkload, numServicePerWorkload, i, identifier, iconBase64)
 
 		for _, service := range services {
 			legacyID := clusterID + "/" + service.Name + "." + service.Namespace
@@ -276,25 +286,17 @@ func prepareServices(ctx context.Context, t *testing.T, logger *zap.Logger, omni
 			expectedLabel := service.Annotations[constants.ExposedServiceLabelAnnotationKey]
 			explicitAlias, hasExplicitAlias := service.Annotations[constants.ExposedServicePrefixAnnotationKey]
 
-			// Multi-port lenient rule: only the lowest port can hold an explicit alias;
-			// the rest fall back to auto-generated. In this test setup the multi-port
-			// service has no explicit prefix annotation, so the effective expectation
-			// is "no explicit alias" for both of its ports — but spelling it out keeps
-			// the assertion correct if that ever changes.
+			// The base prefix annotation is honored for the lowest port (or for the port
+			// that reused a pre-existing bare-ID resource); other ports of a multi-port
+			// service auto-generate. Our test setup never sets a prefix annotation on
+			// a multi-port service, so the simple "not multi-port" guard is enough.
 			expectExplicitAlias := hasExplicitAlias && !isMultiPort
 
 			for _, portStr := range portStrs {
 				expectedPort, err := strconv.Atoi(portStr)
 				require.NoError(t, err)
 
-				// Fresh services in this test never have a pre-existing legacy bare-ID
-				// resource, so all expected IDs are in the new suffixed format. The
-				// legacy bare-ID reuse path is covered by reconciler unit tests.
-				expectedID := fmt.Sprintf("%s/%d", legacyID, expectedPort)
-
-				var res *omni.ExposedService
-
-				rtestutils.AssertResource[*omni.ExposedService](ctx, t, omniState, expectedID, func(r *omni.ExposedService, assertion *assert.Assertions) {
+				res := findExposedService(ctx, t, omniState, legacyID, expectedPort, func(r *omni.ExposedService, assertion *assert.Assertions) {
 					assertion.Equal(expectedPort, int(r.TypedSpec().Value.Port))
 					assertion.Equal(expectedLabel, r.TypedSpec().Value.Label)
 					assertion.Equal(expectedIconBase64, r.TypedSpec().Value.IconBase64)
@@ -305,8 +307,6 @@ func prepareServices(ctx context.Context, t *testing.T, logger *zap.Logger, omni
 					if expectExplicitAlias {
 						assertion.Contains(r.TypedSpec().Value.Url, explicitAlias)
 					}
-
-					res = r
 				})
 
 				deployment.services = append(deployment.services, serviceContext{
@@ -321,6 +321,42 @@ func prepareServices(ctx context.Context, t *testing.T, logger *zap.Logger, omni
 	}
 
 	return cluster
+}
+
+// findExposedService asserts that an ExposedService for the given (cluster, service,
+// port) triple exists in either the new suffixed ID format ("<cluster>/<svc>.<ns>/<port>")
+// or the legacy bare format ("<cluster>/<svc>.<ns>"). The reconciler picks the suffixed
+// format for fresh services and reuses the legacy bare ID when a pre-existing single-port
+// resource matches the desired host port, so the URL stays stable across the upgrade
+// from a release that only knew the bare format. The check callback runs against
+// whichever resource is found.
+func findExposedService(ctx context.Context, t *testing.T, st state.State, legacyID string, port int, check func(*omni.ExposedService, *assert.Assertions)) *omni.ExposedService {
+	suffixID := fmt.Sprintf("%s/%d", legacyID, port)
+
+	var found *omni.ExposedService
+
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		for _, id := range []string{suffixID, legacyID} {
+			res, err := safe.StateGetByID[*omni.ExposedService](ctx, st, id)
+			if err == nil {
+				check(res, assert.New(collect))
+
+				found = res
+
+				return
+			}
+
+			if !state.IsNotFoundError(err) {
+				collect.Errorf("error reading %q: %v", id, err)
+
+				return
+			}
+		}
+
+		collect.Errorf("neither %q nor %q exists", suffixID, legacyID)
+	}, 60*time.Second, 100*time.Millisecond)
+
+	return found
 }
 
 func testAccess(ctx context.Context, t *testing.T, logger *zap.Logger, saKey *pgp.Key, exposedServices []*omni.ExposedService, expectedStatusCode int) {
@@ -524,7 +560,7 @@ func prepareRequest(ctx context.Context, svcURL string) (*http.Request, error) {
 }
 
 func createKubernetesResources(ctx context.Context, t *testing.T, logger *zap.Logger, kubeClient clientgokubernetes.Interface,
-	firstPort, numReplicas, numServices int, identifier, icon string,
+	firstPort, numReplicas, numServices, workloadIndex int, identifier, icon string,
 ) (*appsv1.Deployment, []*corev1.Service) {
 	namespace := "default"
 
@@ -619,21 +655,12 @@ func createKubernetesResources(ctx context.Context, t *testing.T, logger *zap.Lo
 		svcIdentifier := fmt.Sprintf("%s-s%02d", identifier, i)
 		port := firstPort + i
 
-		// Make the last service of each workload multi-port so the multi-port code path
-		// is tested: a single Service annotated with N host ports must produce N
-		// ExposedServices. The extra port is offset by +10000 to avoid collisions with
-		// other workloads' allocations.
-		portAnnotation := strconv.Itoa(port)
-		if i == numServices-1 {
-			portAnnotation = fmt.Sprintf("%d,%d", port, port+10000)
-		}
-
 		service := corev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      svcIdentifier,
 				Namespace: namespace,
 				Annotations: map[string]string{
-					constants.ExposedServicePortAnnotationKey:  portAnnotation,
+					constants.ExposedServicePortAnnotationKey:  strconv.Itoa(port),
 					constants.ExposedServiceLabelAnnotationKey: svcIdentifier,
 					constants.ExposedServiceIconAnnotationKey:  icon,
 				},
@@ -661,6 +688,49 @@ func createKubernetesResources(ctx context.Context, t *testing.T, logger *zap.Lo
 		if !apierrors.IsAlreadyExists(err) {
 			require.NoError(t, err)
 		}
+	}
+
+	// One extra Service per workload with a multi-port annotation, so the multi-port
+	// code path gets exercised end to end. Two host ports are exposed but both target
+	// the same backend Service port; the kube-service-exposer DaemonSet routes both
+	// host ports to the same underlying pods. The "-mp" name suffix means the
+	// previous-version test image doesn't know about this Service, so it's always
+	// freshly created in both regular runs and post-upgrade runs.
+	//
+	// The multi-port pair is allocated from a separate range driven by the workload
+	// index, so it does not collide across workloads even when each workload owns a
+	// single single-port slot.
+	mpIdentifier := identifier + "-mp"
+	mpPort1 := 20000 + workloadIndex*2
+	mpPort2 := 20001 + workloadIndex*2
+
+	mpService := corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      mpIdentifier,
+			Namespace: namespace,
+			Annotations: map[string]string{
+				constants.ExposedServicePortAnnotationKey:  fmt.Sprintf("%d,%d", mpPort1, mpPort2),
+				constants.ExposedServiceLabelAnnotationKey: mpIdentifier,
+				constants.ExposedServiceIconAnnotationKey:  icon,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"app": identifier,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Port:       80,
+					TargetPort: intstr.FromInt32(80),
+				},
+			},
+		},
+	}
+
+	services = append(services, &mpService)
+
+	if _, err = kubeClient.CoreV1().Services(namespace).Create(ctx, &mpService, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		require.NoError(t, err)
 	}
 
 	// assert that all pods of the deployment are ready
