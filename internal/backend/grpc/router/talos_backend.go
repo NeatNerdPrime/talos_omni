@@ -35,10 +35,6 @@ var operatorMethodSet = xslices.ToSet([]string{
 	machine.MachineService_EtcdAlarmDisarm_FullMethodName,
 	machine.MachineService_EtcdAlarmList_FullMethodName,
 	machine.MachineService_EtcdDefragment_FullMethodName,
-	machine.MachineService_EtcdDowngradeCancel_FullMethodName,
-	machine.MachineService_EtcdDowngradeEnable_FullMethodName,
-	machine.MachineService_EtcdDowngradeValidate_FullMethodName,
-	machine.MachineService_EtcdForfeitLeadership_FullMethodName,
 	machine.MachineService_EtcdStatus_FullMethodName,
 	machine.MachineService_PacketCapture_FullMethodName,
 	machine.MachineService_Reboot_FullMethodName,
@@ -53,6 +49,10 @@ var operatorMethodSet = xslices.ToSet([]string{
 var adminMethodSet = xslices.ToSet([]string{
 	storage.StorageService_BlockDeviceWipe_FullMethodName,
 
+	machine.MachineService_EtcdDowngradeCancel_FullMethodName,
+	machine.MachineService_EtcdDowngradeEnable_FullMethodName,
+	machine.MachineService_EtcdDowngradeValidate_FullMethodName,
+	machine.MachineService_EtcdForfeitLeadership_FullMethodName,
 	machine.MachineService_MetaWrite_FullMethodName,
 	machine.MachineService_MetaDelete_FullMethodName,
 	machine.DebugService_ContainerRun_FullMethodName,
